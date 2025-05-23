@@ -1,0 +1,376 @@
+{
+    "request_parameters": [
+        {
+            "name": "format",
+            "required": "Yes",
+            "type": "string",
+            "default": null,
+            "options": [
+                "json",
+                "xml"
+            ],
+            "description": "The output response format."
+        },
+        {
+            "name": "api_key",
+            "required": "Yes",
+            "type": "string",
+            "default": null,
+            "description": "Your developer API key. See API keys for more information."
+        },
+        {
+            "name": "system_capacity",
+            "required": "Yes",
+            "type": "decimal",
+            "default": null,
+            "range": "0.05 to 500000",
+            "description": "Nameplate capacity (kW)."
+        },
+        {
+            "name": "module_type",
+            "required": "Yes",
+            "type": "integer",
+            "default": null,
+            "options": {
+                "0": "Standard",
+                "1": "Premium",
+                "2": "Thin film"
+            },
+            "description": "Module type."
+        },
+        {
+            "name": "losses",
+            "required": "Yes",
+            "type": "decimal",
+            "default": null,
+            "range": "-5 to 99",
+            "description": "System losses (percent)."
+        },
+        {
+            "name": "array_type",
+            "required": "Yes",
+            "type": "integer",
+            "default": null,
+            "options": {
+                "0": "Fixed - Open Rack",
+                "1": "Fixed - Roof Mounted",
+                "2": "1-Axis",
+                "3": "1-Axis Backtracking",
+                "4": "2-Axis"
+            },
+            "description": "Array type."
+        },
+        {
+            "name": "tilt",
+            "required": "Yes",
+            "type": "decimal",
+            "default": null,
+            "range": "0 to 90",
+            "description": "Tilt angle (degrees)."
+        },
+        {
+            "name": "azimuth",
+            "required": "Yes",
+            "type": "decimal",
+            "default": null,
+            "range": "Min: 0, Max: <360",
+            "description": "Azimuth angle (degrees)."
+        },
+        {
+            "name": "lat",
+            "required": "Depends",
+            "type": "decimal",
+            "default": null,
+            "range": "-90 to 90",
+            "description": "The latitude for the location to use. Required if file_id not specified."
+        },
+        {
+            "name": "lon",
+            "required": "Depends",
+            "type": "decimal",
+            "default": null,
+            "range": "-180 to 180",
+            "description": "The longitude for the location to use. Required if file_id not specified."
+        },
+        {
+            "name": "file_id",
+            "required": "Depends",
+            "type": "string",
+            "default": "none",
+            "description": "Reference to a specific climate data file to use. Must be a valid id returned by the Solar Dataset Query V2 API. Required if lat/lon not specified."
+        },
+        {
+            "name": "dataset",
+            "required": "No",
+            "type": "string",
+            "default": "nsrdb",
+            "options": [
+                "nsrdb",
+                "tmy2",
+                "tmy3",
+                "intl"
+            ],
+            "description": "The climate dataset to use. Should not be passed in if using file_id to specify the climate data file.",
+            "option_description": {
+                "nsrdb": "Gridded TMY data from the NREL National Solar Radiation Database (NSRDB). Datasets include: NSRDB PSM V3 GOES tmy-2020 3.2.0, NSRDB PSM V3 Himawari tmy-2020 3.2.0, and NSRDB PSM V4 Meteosat Prime Meridian tmy-2022 1.0.0",
+                "tmy2": "TMY2 station data (see NSRDB 1961-1990 Archive)",
+                "tmy3": "TMY3 station data (see NSRDB 1991-2005 Archive)",
+                "intl": "PVWatts International station data"
+            }
+        },
+        {
+            "name": "radius",
+            "required": "No",
+            "type": "integer",
+            "default": 100,
+            "description": "The search radius to use when searching for the closest climate data station (miles). Pass in radius=0 to use the closest station regardless of the distance."
+        },
+        {
+            "name": "timeframe",
+            "required": "No",
+            "type": "string",
+            "default": "monthly",
+            "options": [
+                "monthly",
+                "hourly"
+            ],
+            "description": "Granularity of the output response."
+        },
+        {
+            "name": "dc_ac_ratio",
+            "required": "No",
+            "type": "decimal",
+            "default": 1.2,
+            "description": "DC to AC ratio. Must be positive."
+        },
+        {
+            "name": "gcr",
+            "required": "No",
+            "type": "decimal",
+            "default": 0.4,
+            "range": "0.01 - 0.99",
+            "description": "Ground coverage ratio."
+        },
+        {
+            "name": "inv_eff",
+            "required": "No",
+            "type": "decimal",
+            "default": 96,
+            "range": "90 - 99.5",
+            "description": "Inverter efficiency at rated power."
+        },
+        {
+            "name": "bifaciality",
+            "required": "No",
+            "type": "decimal",
+            "default": null,
+            "range": "0 - 1",
+            "description": "The ratio of rear-side efficiency to front-side efficiency. Typically a value between 0.65 and 0.9 provided on the bifacial module datasheet. This is to account for the fact that photovoltaic cells on the rear of the module are usually less efficient than those on the front. The bifaciality does not affect the solar irradiance on the rear of the module."
+        },
+        {
+            "name": "albedo",
+            "required": "No",
+            "type": "decimal or array of decimal",
+            "default": null,
+            "range": ">0 and <1",
+            "description": "Ground reflectance. A value of 0 would mean that the ground is completely non-reflective, and a value of 1 would mean that it is completely reflective. Specify either a pipe-delimited array of 12 monthly values or a single value to be used for all months."
+        },
+        {
+            "name": "use_wf_albedo",
+            "required": "No",
+            "type": "integer",
+            "default": null,
+            "options": [
+                0,
+                1
+            ],
+            "description": "Use hourly or subhourly albedo data from the weather file instead of the monthly albedo values, if available. 0 means do not use weather file albedo values, 1 means use weather file albedo values."
+        },
+        {
+            "name": "soiling",
+            "required": "No",
+            "type": "array of decimal",
+            "default": null,
+            "range": "0 - 100",
+            "description": "Reduction in incident solar irradiance caused by dust or other seasonal soiling of the module surface that reduces the radiation incident on the subarray. Specify a pipe-delimited array of 12 monthly values."
+        },
+        {
+            "name": "callback",
+            "required": "No",
+            "type": "string",
+            "default": null,
+            "description": "Return the data using JSONP and the given callback function (only applicable when using the json format)."
+        }
+    ],
+    "response_fields": [
+        {
+            "name": "inputs",
+            "type": "collection",
+            "description": "The input parameters received in the request."
+        },
+        {
+            "name": "errors",
+            "type": "array of strings",
+            "description": "Any error messages resulting from the request."
+        },
+        {
+            "name": "warnings",
+            "type": "array of strings",
+            "description": "Any warning messages resulting from the request."
+        },
+        {
+            "name": "version",
+            "type": "string",
+            "description": "The current version of the web service."
+        },
+        {
+            "name": "ssc_info",
+            "type": "collection",
+            "description": "Information about the SSC library."
+        },
+        {
+            "name": "station_info",
+            "type": "collection",
+            "description": "Information about the weather data used in the simulation."
+        },
+        {
+            "name": "outputs",
+            "type": "collection",
+            "description": "The data outputs from the simulation."
+        }
+    ],
+    "station_info_fields": [
+        {
+            "name": "lat",
+            "type": "decimal",
+            "description": "Latitude of the climate station."
+        },
+        {
+            "name": "lon",
+            "type": "decimal",
+            "description": "Longitude of the climate station."
+        },
+        {
+            "name": "elev",
+            "type": "decimal",
+            "description": "Elevation of the climate station (meters)."
+        },
+        {
+            "name": "tz",
+            "type": "decimal",
+            "description": "Timezone offset from GMT."
+        },
+        {
+            "name": "location",
+            "type": "string",
+            "description": "ID of the climate station."
+        },
+        {
+            "name": "city",
+            "type": "string",
+            "description": "City where the climate station is located."
+        },
+        {
+            "name": "state",
+            "type": "string",
+            "description": "State where the climate station is located."
+        },
+        {
+            "name": "solar_resource_file",
+            "type": "string",
+            "description": "Solar resource filename."
+        },
+        {
+            "name": "distance",
+            "type": "integer",
+            "description": "Distance between the input location and the climate station (meters)."
+        },
+        {
+            "name": "weather_data_source",
+            "type": "string",
+            "description": "Source of the weather data used in the simulation."
+        }
+    ],
+    "output_fields": [
+        {
+            "name": "poa_monthly",
+            "type": "array of decimal",
+            "description": "Monthly plane of array irradiance values (kWh/m2). The first element represents January and the last represents December."
+        },
+        {
+            "name": "dc_monthly",
+            "type": "array of decimal",
+            "description": "Monthly DC array output (kWhdc). The first element represents January and the last represents December."
+        },
+        {
+            "name": "ac_monthly",
+            "type": "array of decimal",
+            "description": "Monthly AC system output (kWhac). The first element represents January and the last represents December."
+        },
+        {
+            "name": "ac_annual",
+            "type": "decimal",
+            "description": "Annual AC system output (kWhac)."
+        },
+        {
+            "name": "solrad_monthly",
+            "type": "array of decimal",
+            "description": "Monthly solar radiation values (kWh/m2/day). The first element represents January and the last represents December."
+        },
+        {
+            "name": "solrad_annual",
+            "type": "decimal",
+            "description": "Annual solar radiation value (kWh/m2/day)."
+        },
+        {
+            "name": "capacity_factor",
+            "type": "decimal",
+            "description": "The ratio of the system's predicted electrical output in the first year of operation to the nameplate output (AC-to-DC)."
+        },
+        {
+            "name": "ac",
+            "type": "array of decimal",
+            "description": "Hourly AC system output (Wac) (only when timeframe=hourly)."
+        },
+        {
+            "name": "poa",
+            "type": "array of decimal",
+            "description": "Hourly plane of array irradiance (W/m2) (only when timeframe=hourly)."
+        },
+        {
+            "name": "dn",
+            "type": "array of decimal",
+            "description": "Hourly beam normal irradiance (W/m2) (only when timeframe=hourly)."
+        },
+        {
+            "name": "dc",
+            "type": "array of decimal",
+            "description": "Hourly DC array output (Wdc) (only when timeframe=hourly)."
+        },
+        {
+            "name": "df",
+            "type": "array of decimal",
+            "description": "Hourly diffuse irradiance (W/m2) (only when timeframe=hourly)."
+        },
+        {
+            "name": "tamb",
+            "type": "array of decimal",
+            "description": "Hourly ambient temperature (°C) (only when timeframe=hourly)."
+        },
+        {
+            "name": "tcell",
+            "type": "array of decimal",
+            "description": "Hourly module temperature (°C) (only when timeframe=hourly)."
+        },
+        {
+            "name": "wspd",
+            "type": "array of decimal",
+            "description": "Hourly windspeed (m/s) (only when timeframe=hourly)."
+        },
+        {
+            "name": "alb",
+            "type": "array of decimal",
+            "description": "Hourly albedo values (only when timeframe=hourly)."
+        }
+    ]
+}
