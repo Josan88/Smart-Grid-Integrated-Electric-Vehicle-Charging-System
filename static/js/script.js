@@ -42,6 +42,10 @@ let rangeValueDisplays = {}; // Initialize as empty, populate in DOMContentLoade
 // Current simulation state
 let simulationRunning = false;
 
+// Variables for tracking PV output rate calculation
+let previousPvOutput = null;
+let previousTimestamp = null;
+
 // Debounce function to prevent too many form updates
 let paramChangeTimeout = null;
 const PARAM_CHANGE_DEBOUNCE_MS = 500; // 500ms debounce
