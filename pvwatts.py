@@ -12,7 +12,7 @@ CACHE_EXPIRY_DAYS = 30  # Cache expiry in days
 
 def get_pvwatts_data(
     api_key, system_capacity, module_type, losses, array_type, lat, lon, tilt, azimuth,
-    use_cache=True, force_refresh=False
+    use_cache=True, force_refresh=False, **optional_params
 ):
     """
     Calls the NREL PVWatts V8 API to get photovoltaic energy production estimates.
@@ -29,11 +29,11 @@ def get_pvwatts_data(
         azimuth (float): Azimuth angle (degrees). Range: 0 to 359.9.
         use_cache (bool): Whether to use cached data if available.
         force_refresh (bool): Whether to force refresh the cache.
+        **optional_params: Additional optional parameters (dc_ac_ratio, gcr, inv_eff, radius, dataset, albedo, bifaciality, etc.)
         
     Returns:
         dict: The JSON response from the API, or None if an error occurs.
-    """
-    # Try to use cached data if allowed
+    """    # Try to use cached data if allowed
     if use_cache and not force_refresh:
         cached_data = read_from_cache(
             system_capacity, module_type, losses, array_type, lat, lon, tilt, azimuth
@@ -53,9 +53,18 @@ def get_pvwatts_data(
         "lon": lon,
         "tilt": tilt,
         "azimuth": azimuth,
-        "timeframe": "hourly",  # Optional: 'hourly' or 'monthly'
-        # Add other optional parameters as needed, e.g., 'gcr', 'dc_ac_ratio', 'inv_eff', 'radius', 'soiling', 'albedo', 'bifaciality'
+        "timeframe": "hourly",  # Always use hourly for our simulation
     }
+    
+    # Add optional parameters if provided and not None/empty
+    valid_optional_params = [
+        'dc_ac_ratio', 'gcr', 'inv_eff', 'bifaciality', 'albedo', 
+        'radius', 'dataset', 'soiling', 'use_wf_albedo'
+    ]
+    
+    for param in valid_optional_params:
+        if param in optional_params and optional_params[param] is not None and optional_params[param] != "":
+            params[param] = optional_params[param]
     
     response = None
     try:

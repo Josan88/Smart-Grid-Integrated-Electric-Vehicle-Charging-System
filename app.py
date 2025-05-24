@@ -73,6 +73,7 @@ simulation_lock = threading.Lock()
 # Global variables for data
 current_simulation_params = SimulationParameters()
 current_pvwatts_settings = {
+    # Required parameters
     "api_key": "YAwml3YOnwIHYekjGfahs7hSVx4iI0gDtTxlvwCu",
     "system_capacity": 26.02,
     "module_type": 0,
@@ -82,6 +83,14 @@ current_pvwatts_settings = {
     "lon": 110.35732724037013,
     "tilt": 20.0,
     "azimuth": 180.0,
+    # Optional parameters
+    "dc_ac_ratio": 1.2,
+    "gcr": 0.4,
+    "inv_eff": 96.0,
+    "radius": 100,
+    "dataset": "nsrdb",
+    "albedo": None,  # None means use default/auto
+    "bifaciality": None,  # None means not applicable (non-bifacial)
 }
 
 # DC Watts data from PVWatts
@@ -135,8 +144,7 @@ def update_pvwatts_data():
 
     logger.info("Fetching new PVWatts data...")
 
-    try:
-        # Call the PVWatts API
+    try:        # Call the PVWatts API with all parameters
         response = pvwatts.get_pvwatts_data(
             api_key=current_pvwatts_settings["api_key"],
             system_capacity=current_pvwatts_settings["system_capacity"],
@@ -147,6 +155,14 @@ def update_pvwatts_data():
             lon=current_pvwatts_settings["lon"],
             tilt=current_pvwatts_settings["tilt"],
             azimuth=current_pvwatts_settings["azimuth"],
+            # Optional parameters
+            dc_ac_ratio=current_pvwatts_settings.get("dc_ac_ratio"),
+            gcr=current_pvwatts_settings.get("gcr"),
+            inv_eff=current_pvwatts_settings.get("inv_eff"),
+            radius=current_pvwatts_settings.get("radius"),
+            dataset=current_pvwatts_settings.get("dataset"),
+            albedo=current_pvwatts_settings.get("albedo"),
+            bifaciality=current_pvwatts_settings.get("bifaciality"),
         )
 
         if response and "outputs" in response and "dc" in response["outputs"]:
@@ -686,15 +702,19 @@ def pvwatts_settings():
 
     elif request.method == "POST":
         try:
-            data = request.json
-
-            # Update settings with new values
+            data = request.json            # Update settings with new values
             for key, value in data.items():
                 if key in current_pvwatts_settings:
+                    # Handle empty values for optional parameters
+                    if value == "" or value is None:
+                        if key in ["albedo", "bifaciality"]:  # Optional parameters that can be None
+                            current_pvwatts_settings[key] = None
+                        else:
+                            continue  # Skip empty required parameters
                     # Convert to appropriate type
-                    if key in ["module_type", "array_type"]:
+                    elif key in ["module_type", "array_type", "radius"]:
                         current_pvwatts_settings[key] = int(value)
-                    elif key == "api_key":
+                    elif key in ["api_key", "dataset"]:
                         current_pvwatts_settings[key] = str(value)
                     else:
                         current_pvwatts_settings[key] = float(value)
@@ -996,14 +1016,19 @@ def handle_update_pvwatts(data):
     """Handle PVWatts settings update request from client."""
     global current_pvwatts_settings
 
-    try:
-        # Update PVWatts settings
+    try:        # Update PVWatts settings
         for key, value in data.items():
             if key in current_pvwatts_settings:
+                # Handle empty values for optional parameters
+                if value == "" or value is None:
+                    if key in ["albedo", "bifaciality"]:  # Optional parameters that can be None
+                        current_pvwatts_settings[key] = None
+                    else:
+                        continue  # Skip empty required parameters
                 # Convert to appropriate type
-                if key in ["module_type", "array_type"]:
+                elif key in ["module_type", "array_type", "radius"]:
                     current_pvwatts_settings[key] = int(value)
-                elif key == "api_key":
+                elif key in ["api_key", "dataset"]:
                     current_pvwatts_settings[key] = str(value)
                 else:
                     current_pvwatts_settings[key] = float(value)

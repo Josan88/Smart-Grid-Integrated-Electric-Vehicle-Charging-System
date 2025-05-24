@@ -42,10 +42,6 @@ let rangeValueDisplays = {}; // Initialize as empty, populate in DOMContentLoade
 // Current simulation state
 let simulationRunning = false;
 
-// Variables for tracking PV output rate calculation
-let previousPvOutput = null;
-let previousTimestamp = null;
-
 // Debounce function to prevent too many form updates
 let paramChangeTimeout = null;
 const PARAM_CHANGE_DEBOUNCE_MS = 500; // 500ms debounce
@@ -782,11 +778,12 @@ function processSingleDataPoint(data) {
     trimChartData();
     updateCharts();
     updateCurrentValues(); // Update dashboard numbers
-    updateEVBatteryStatus(); // Update EV status displays    // Update current PV output display specifically
+    updateEVBatteryStatus(); // Update EV status displays    // Update current PV output per second display (average PV output per second = current PV output / 3600)
     if (data.pv_output_watts !== undefined) {
         const currentPvOutputEl = document.getElementById('current-pv-output');
         if (currentPvOutputEl) {
-            currentPvOutputEl.textContent = `${data.pv_output_watts.toFixed(2)} W`;
+            const pvOutputPerSecond = data.pv_output_watts / 3600;
+            currentPvOutputEl.textContent = `${pvOutputPerSecond.toFixed(4)} W/s`;
         } else {
             console.error("DOM element #current-pv-output not found for pv_output_watts.");
         }

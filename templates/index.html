@@ -205,16 +205,19 @@
                         </form>
                     </div>
                 </div>
-                
-                <div class="card">
+                  <div class="card">
                     <div class="card-header bg-success text-white">
                         <h5 class="mb-0">PVWatts Settings</h5>
                     </div>
                     <div class="card-body">
                         <form id="pvwatts-form">
+                            <!-- Basic Parameters -->
+                            <h6 class="text-primary mb-3">Basic Parameters</h6>
+                            
                             <div class="mb-3">
                                 <label for="system_capacity" class="form-label">System Capacity (kW)</label>
                                 <input type="number" class="form-control" id="system_capacity" name="system_capacity" step="0.01" min="0.05" max="500000">
+                                <div class="form-text">Nameplate capacity (kW). Range: 0.05 to 500,000</div>
                             </div>
                             
                             <div class="mb-3">
@@ -229,6 +232,7 @@
                             <div class="mb-3">
                                 <label for="losses" class="form-label">System Losses (%)</label>
                                 <input type="number" class="form-control" id="losses" name="losses" step="0.1" min="-5" max="99">
+                                <div class="form-text">System losses (percent). Range: -5 to 99</div>
                             </div>
                             
                             <div class="mb-3">
@@ -242,14 +246,16 @@
                                 </select>
                             </div>
                             
-                            <div class="mb-3">
-                                <label for="tilt" class="form-label">Tilt Angle (degrees)</label>
-                                <input type="number" class="form-control" id="tilt" name="tilt" step="0.1" min="0" max="90">
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="azimuth" class="form-label">Azimuth Angle (degrees)</label>
-                                <input type="number" class="form-control" id="azimuth" name="azimuth" step="0.1" min="0" max="359.9">
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label for="tilt" class="form-label">Tilt Angle (degrees)</label>
+                                    <input type="number" class="form-control" id="tilt" name="tilt" step="0.1" min="0" max="90">
+                                </div>
+                                <div class="col-6">
+                                    <label for="azimuth" class="form-label">Azimuth Angle (degrees)</label>
+                                    <input type="number" class="form-control" id="azimuth" name="azimuth" step="0.1" min="0" max="359.9">
+                                    <div class="form-text">180 = South facing</div>
+                                </div>
                             </div>
                             
                             <div class="row mb-3">
@@ -262,12 +268,76 @@
                                     <input type="number" class="form-control" id="lon" name="lon" step="0.000001" min="-180" max="180">
                                 </div>
                             </div>
+
+                            <!-- Advanced Parameters -->
+                            <div class="accordion mt-4" id="advancedSettingsAccordion">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="headingAdvanced">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAdvanced" aria-expanded="false" aria-controls="collapseAdvanced">
+                                            Advanced Parameters (Optional)
+                                        </button>
+                                    </h2>
+                                    <div id="collapseAdvanced" class="accordion-collapse collapse" aria-labelledby="headingAdvanced" data-bs-parent="#advancedSettingsAccordion">
+                                        <div class="accordion-body">
+                                            <div class="row mb-3">
+                                                <div class="col-6">
+                                                    <label for="dc_ac_ratio" class="form-label">DC to AC Ratio</label>
+                                                    <input type="number" class="form-control" id="dc_ac_ratio" name="dc_ac_ratio" step="0.01" min="0.1" max="3.0" value="1.2">
+                                                    <div class="form-text">Default: 1.2</div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <label for="gcr" class="form-label">Ground Coverage Ratio</label>
+                                                    <input type="number" class="form-control" id="gcr" name="gcr" step="0.01" min="0.01" max="0.99" value="0.4">
+                                                    <div class="form-text">Range: 0.01 - 0.99, Default: 0.4</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="row mb-3">
+                                                <div class="col-6">
+                                                    <label for="inv_eff" class="form-label">Inverter Efficiency (%)</label>
+                                                    <input type="number" class="form-control" id="inv_eff" name="inv_eff" step="0.1" min="90" max="99.5" value="96">
+                                                    <div class="form-text">Range: 90 - 99.5, Default: 96</div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <label for="albedo" class="form-label">Ground Reflectance (Albedo)</label>
+                                                    <input type="number" class="form-control" id="albedo" name="albedo" step="0.01" min="0" max="1" placeholder="Auto">
+                                                    <div class="form-text">Range: 0-1, Leave empty for auto</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="row mb-3">
+                                                <div class="col-6">
+                                                    <label for="bifaciality" class="form-label">Bifaciality</label>
+                                                    <input type="number" class="form-control" id="bifaciality" name="bifaciality" step="0.01" min="0" max="1" placeholder="N/A">
+                                                    <div class="form-text">Range: 0-1, for bifacial modules only</div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <label for="radius" class="form-label">Search Radius (miles)</label>
+                                                    <input type="number" class="form-control" id="radius" name="radius" step="1" min="0" max="1000" value="100">
+                                                    <div class="form-text">Default: 100, 0 = closest station</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="dataset" class="form-label">Climate Dataset</label>
+                                                <select class="form-select" id="dataset" name="dataset">
+                                                    <option value="nsrdb">NSRDB (Gridded TMY)</option>
+                                                    <option value="tmy2">TMY2 Station Data</option>
+                                                    <option value="tmy3">TMY3 Station Data</option>
+                                                    <option value="intl">International Station Data</option>
+                                                </select>
+                                                <div class="form-text">Default: NSRDB</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             
-                            <div class="d-grid">
+                            <div class="d-grid mt-3">
                                 <button type="submit" class="btn btn-success">Update PVWatts Data</button>
                             </div>
                         </form>
-                    </div>                </div>
+                    </div></div>
             </div>
             
             <!-- Main content area with charts -->
@@ -278,28 +348,16 @@
                         <div class="card h-100">
                             <div class="card-header bg-warning">
                                 <h5 class="mb-0">PV Output</h5>
-                            </div>
-                            <div class="card-body">
+                            </div>                            <div class="card-body">
                                 <div class="row mb-3">
-                                    <div class="col-6">
+                                    <div class="col-12 d-flex justify-content-center">
                                         <div class="d-flex align-items-center">
                                             <div class="me-3">
                                                 <i class="bi bi-sun fs-1"></i>
                                             </div>
                                             <div>
-                                                <h6 class="mb-0">Current PV Output</h6>
-                                                <h3 id="current-pv-output">0.00 kW</h3>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="d-flex align-items-center">
-                                            <div class="me-3">
-                                                <i class="bi bi-clock fs-1"></i>
-                                            </div>
-                                            <div>
-                                                <h6 class="mb-0">Hour of Day</h6>
-                                                <h3 id="current-hour">00:00</h3>
+                                                <h6 class="mb-0">Current PV Output per Second</h6>
+                                                <h3 id="current-pv-output">0.00 W/s</h3>
                                             </div>
                                         </div>
                                     </div>
