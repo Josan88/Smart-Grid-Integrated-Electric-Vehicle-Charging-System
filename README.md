@@ -51,6 +51,8 @@ System	| MATLAB Commands
 ------- | ---------------
 Windows® | `cd (fullfile(matlabroot,"extern","engines","python"))` <br> `system("python -m pip install .")`
 
+For MATLAB and Python compatibility details, please refer to the official MathWorks documentation: [MATLAB Python Compatibility](https://uk.mathworks.com/support/requirements/python-compatibility.html)
+
 ## Project Structure
 
 (A brief overview of the main directories and files will be added here to help users navigate the codebase.)
