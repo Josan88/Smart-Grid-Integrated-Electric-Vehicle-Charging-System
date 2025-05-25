@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-The Smart Grid-Integrated Electric Vehicle (EV) Charging System is a simulation dashboard designed to model, visualize, and manage the complexities of an EV charging infrastructure that interacts with a smart grid. This system allows users to simulate various scenarios, monitor real-time data, and analyze the performance of the charging system, including the integration of renewable energy sources like solar power.
+The Smart Grid-Integrated Electric Vehicle (EV) Charging System is a simulation dashboard designed to model, visualize, and manage the complexities of an EV charging infrastructure that interacts w[...]
 
 ## Key Features
 
@@ -40,7 +40,16 @@ The Smart Grid-Integrated Electric Vehicle (EV) Charging System is a simulation 
 
 ## Getting Started
 
-(Instructions on how to set up and run the project will be added here. This typically includes steps for cloning the repository, installing dependencies, and starting the simulation server and UI.)
+(Instructions on how to set up and run the project will be added here. This typically includes steps for cloning the repository, installing dependencies, and starting the simulation server and UI.[...]
+
+## Installation
+
+### Install from MATLAB
+You can install the MATLAB engine directly from MATLAB. Start MATLAB and run the following commands.
+
+System	| MATLAB Commands
+------- | ---------------
+Windows® | `cd (fullfile(matlabroot,"extern","engines","python"))` <br> `system("python -m pip install .")`
 
 ## Project Structure
 
