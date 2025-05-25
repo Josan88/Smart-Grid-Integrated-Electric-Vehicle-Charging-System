@@ -15,7 +15,6 @@ let simStartDaySelect;   // Updated for day selection
 let simStartHourSelect;  // Updated for hour selection
 
 // Charts
-let pvOutputChart;
 let batteryChart;
 let evChargingChart;
 let gridChart;
@@ -24,7 +23,6 @@ let gridChart;
 const MAX_DATA_POINTS = 100;
 const chartData = {
     time: [],
-    pvOutput: [],
     batteryValues: [],
     batteryRecharge: [],
     evRecharge: [],
@@ -32,7 +30,9 @@ const chartData = {
     vehicle1BatteryLevel: [],
     vehicle2BatteryLevel: [],
     vehicle3BatteryLevel: [],
-    vehicle4BatteryLevel: []
+    vehicle4BatteryLevel: [],
+    electricityCost: [],
+    cumulativeCost: []
 };
 
 // Parameters management - Declare globally, assign in DOMContentLoaded
@@ -238,48 +238,13 @@ socket.on('simulation_speed_updated', (data) => {
 });
 
 // Function to initialize all charts
-function initializeCharts() {
-    // PV Output Chart
-    const pvOutputCtx = document.getElementById('pv-output-chart').getContext('2d');
-    pvOutputChart = new Chart(pvOutputCtx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'PV Output (W)', // Changed from kW to W
-                data: [],
-                borderColor: 'rgba(255, 193, 7, 1)',
-                backgroundColor: 'rgba(255, 193, 7, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            animation: {
-                duration: 0 // Disable animation for better performance
-            },
-            scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Simulation Time (s)'
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Power (W)' // Changed from kW to W
-                    }
-                }
-            }
-        }
-    });
-    
-    // Battery Chart
-    const batteryCtx = document.getElementById('battery-chart').getContext('2d');
+function initializeCharts() {    // Battery Chart
+    const batteryElement = document.getElementById('battery-chart');
+    if (!batteryElement) {
+        console.error('Battery chart canvas not found');
+        return;
+    }
+    const batteryCtx = batteryElement.getContext('2d');
     batteryChart = new Chart(batteryCtx, {
         type: 'line',
         data: {
@@ -468,9 +433,14 @@ function setupEventListeners() {
     
     if (simStartHourSelect) {
         simStartHourSelect.addEventListener('change', triggerAutoApply);    }
-    
-    // Set up auto-apply for parameter inputs
+      // Set up auto-apply for parameter inputs
     setupAutoApplyForInputs();
+    
+    // Set up electricity pricing event listeners
+    setupElectricityPricingEventListeners();
+    
+    // Load current electricity pricing configuration
+    loadElectricityPricing();
     
     // PVWatts form submission
     pvwattsForm.addEventListener('submit', (e) => {
@@ -532,6 +502,29 @@ function setupAutoApplyForInputs() {
     
     // Log message to inform users of the auto-apply behavior
     logMessage('Form inputs will automatically apply changes when modified', 'info');
+}
+
+// Set up event listeners for electricity pricing functionality
+function setupElectricityPricingEventListeners() {
+    // Pricing configuration form
+    const pricingForm = document.getElementById('pricing-config-form');
+    if (pricingForm) {
+        pricingForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(pricingForm);
+            updateElectricityPricing(formData);
+        });
+    }
+    
+    // Reset costs button
+    const resetCostsBtn = document.getElementById('reset-costs-btn');
+    if (resetCostsBtn) {
+        resetCostsBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to reset all electricity cost data?')) {
+                resetElectricityCosts();
+            }
+        });
+    }
 }
 
 // Trigger auto-apply with debouncing
@@ -738,12 +731,8 @@ function processSimulationData(data) {
 
     if (data.time && data.time.length > 0) {
         const baseTime = chartData.time.length > 0 ? Math.max(...chartData.time) + 1 : 0;
-        
-        for (let i = 0; i < data.time.length; i++) {
+          for (let i = 0; i < data.time.length; i++) {
             chartData.time.push(baseTime + data.time[i]);
-            // Assuming pvOutput data is also batched here if this event is used
-            if (data.pvOutput && i < data.pvOutput.length) chartData.pvOutput.push(data.pvOutput[i]); 
-            else if (data.pv_output_watts && i < data.pv_output_watts.length) chartData.pvOutput.push(data.pv_output_watts[i]);
 
             if (data.batt_values && i < data.batt_values.length) chartData.batteryValues.push(data.batt_values[i]);
             if (data.batt_recharge && i < data.batt_recharge.length) chartData.batteryRecharge.push(data.batt_recharge[i]);
@@ -765,7 +754,6 @@ function processSimulationData(data) {
 function processSingleDataPoint(data) {
     // Add data to buffers
     chartData.time.push(data.time_abs); // Use absolute time for chart labels
-    chartData.pvOutput.push(data.pv_output_watts);
     chartData.batteryValues.push(data.batt_value);
     chartData.batteryRecharge.push(data.batt_recharge);
     chartData.evRecharge.push(data.ev_recharge);
@@ -774,20 +762,20 @@ function processSingleDataPoint(data) {
     chartData.vehicle2BatteryLevel.push(data.vehicle2_battery_level);
     chartData.vehicle3BatteryLevel.push(data.vehicle3_battery_level);
     chartData.vehicle4BatteryLevel.push(data.vehicle4_battery_level);
+    
+    // Add cost data if available
+    if (data.electricity_cost !== undefined) {
+        chartData.electricityCost.push(data.electricity_cost);
+    }
+    if (data.cumulative_cost !== undefined) {
+        chartData.cumulativeCost.push(data.cumulative_cost);
+    }
 
     trimChartData();
     updateCharts();
     updateCurrentValues(); // Update dashboard numbers
-    updateEVBatteryStatus(); // Update EV status displays    // Update current PV output per second display (average PV output per second = current PV output / 3600)
-    if (data.pv_output_watts !== undefined) {
-        const currentPvOutputEl = document.getElementById('current-pv-output');
-        if (currentPvOutputEl) {
-            const pvOutputPerSecond = data.pv_output_watts / 3600;
-            currentPvOutputEl.textContent = `${pvOutputPerSecond.toFixed(4)} W/s`;
-        } else {
-            console.error("DOM element #current-pv-output not found for pv_output_watts.");
-        }
-    }
+    updateEVBatteryStatus(); // Update EV status displays
+    updateCostDisplay(data); // Update cost information
 
     // Update peak status display
     if (data.grid_peak_status !== undefined) {
@@ -806,7 +794,6 @@ function trimChartData() {
     if (chartData.time.length > MAX_DATA_POINTS) {
         const excess = chartData.time.length - MAX_DATA_POINTS;
         chartData.time.splice(0, excess);
-        chartData.pvOutput.splice(0, excess);
         chartData.batteryValues.splice(0, excess);
         chartData.batteryRecharge.splice(0, excess);
         chartData.evRecharge.splice(0, excess);
@@ -815,6 +802,8 @@ function trimChartData() {
         chartData.vehicle2BatteryLevel.splice(0, excess);
         chartData.vehicle3BatteryLevel.splice(0, excess);
         chartData.vehicle4BatteryLevel.splice(0, excess);
+        chartData.electricityCost.splice(0, excess);
+        chartData.cumulativeCost.splice(0, excess);
     }
 }
 
@@ -824,15 +813,13 @@ function exportSimulationData() {
         logMessage('No data to export', 'warning');
         return;
     }
-    
-    // Create CSV content
-    let csvContent = 'Time (s),PV Output (kW),Battery Level (%),Battery Recharge (kW),EV Recharge (kW),Grid Request (kW),Vehicle 1 Battery (%),Vehicle 2 Battery (%),Vehicle 3 Battery (%),Vehicle 4 Battery (%)\n';
+      // Create CSV content
+    let csvContent = 'Time (s),Battery Level (%),Battery Recharge (kW),EV Recharge (kW),Grid Request (kW),Vehicle 1 Battery (%),Vehicle 2 Battery (%),Vehicle 3 Battery (%),Vehicle 4 Battery (%)\n';
     
     // Combine all data points
     for (let i = 0; i < chartData.time.length; i++) {
         const row = [
             chartData.time[i] || '',
-            chartData.pvOutput[i] || '',
             chartData.batteryValues[i] || '',
             chartData.batteryRecharge[i] || '',
             chartData.evRecharge[i] || '',
@@ -892,11 +879,6 @@ function updateSimulationTime(data) {
 
 // Update all charts with current data
 function updateCharts() {
-    // Update PV Output Chart
-    pvOutputChart.data.labels = chartData.time;
-    pvOutputChart.data.datasets[0].data = chartData.pvOutput;
-    pvOutputChart.update();
-    
     // Update Battery Chart
     batteryChart.data.labels = chartData.time;
     batteryChart.data.datasets[0].data = chartData.batteryValues;
@@ -919,7 +901,7 @@ function updateCurrentValues() {
     if (chartData.batteryValues.length > 0) {
         const lastBatteryValue = chartData.batteryValues[chartData.batteryValues.length - 1];
         document.getElementById('current-battery-level').textContent = 
-            `${lastBatteryValue.toFixed(1)}%`;
+            `${lastBatteryValue.toFixed(3)}%`;
     }
     
     if (chartData.batteryRecharge.length > 0) {
@@ -1097,4 +1079,133 @@ function logMessage(message, type = 'info') {
     
     simulationLog.appendChild(logEntry);
     simulationLog.scrollTop = simulationLog.scrollHeight;
+}
+
+// Update electricity cost display
+function updateCostDisplay(data) {
+    // Update current electricity cost
+    if (data.electricity_cost !== undefined) {
+        const currentCostEl = document.getElementById('current-electricity-cost');
+        if (currentCostEl) {
+            currentCostEl.textContent = `${data.currency || 'RM'} ${data.electricity_cost.toFixed(4)}`;
+        }
+    }
+    
+    // Update total cumulative cost
+    if (data.cumulative_cost !== undefined) {
+        const totalCostEl = document.getElementById('total-electricity-cost');
+        if (totalCostEl) {
+            totalCostEl.textContent = `${data.currency || 'RM'} ${data.cumulative_cost.toFixed(2)}`;
+        }
+    }
+    
+    // Update current electricity rate
+    if (data.electricity_rate !== undefined) {
+        const currentRateEl = document.getElementById('current-electricity-rate');
+        if (currentRateEl) {
+            currentRateEl.textContent = `${data.currency || 'RM'} ${data.electricity_rate.toFixed(3)}/kWh`;
+        }
+    }
+    
+    // Update rate period
+    if (data.rate_type !== undefined) {
+        const ratePeriodEl = document.getElementById('rate-period');
+        if (ratePeriodEl) {
+            ratePeriodEl.textContent = data.rate_type;
+        }
+    }
+}
+
+// Load current electricity pricing configuration
+function loadElectricityPricing() {
+    fetch('/api/electricity/pricing')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.pricing) {
+                const pricing = data.pricing;
+                
+                // Update pricing form fields
+                const peakRateInput = document.getElementById('peak-rate');
+                const offPeakRateInput = document.getElementById('off-peak-rate');
+                const peakStartSelect = document.getElementById('peak-start');
+                const peakEndSelect = document.getElementById('peak-end');
+                
+                if (peakRateInput) peakRateInput.value = pricing.peak_rate;
+                if (offPeakRateInput) offPeakRateInput.value = pricing.off_peak_rate;
+                if (peakStartSelect) peakStartSelect.value = pricing.peak_start_hour;
+                if (peakEndSelect) peakEndSelect.value = pricing.peak_end_hour;
+                
+                logMessage('Loaded electricity pricing configuration', 'info');
+            } else {
+                logMessage('Failed to load electricity pricing configuration', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading electricity pricing:', error);
+            logMessage('Error loading electricity pricing configuration', 'error');
+        });
+}
+
+// Update electricity pricing configuration
+function updateElectricityPricing(formData) {
+    const pricingData = {
+        peak_rate: parseFloat(formData.get('peak-rate')),
+        off_peak_rate: parseFloat(formData.get('off-peak-rate')),
+        currency: 'RM',
+        peak_start_hour: parseInt(formData.get('peak-start')),
+        peak_end_hour: parseInt(formData.get('peak-end'))
+    };
+    
+    fetch('/api/electricity/pricing', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(pricingData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            logMessage('Electricity pricing updated successfully', 'success');
+        } else {
+            logMessage(`Failed to update electricity pricing: ${data.message}`, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating electricity pricing:', error);
+        logMessage('Error updating electricity pricing', 'error');
+    });
+}
+
+// Reset electricity costs
+function resetElectricityCosts() {
+    fetch('/api/electricity/reset-costs', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            logMessage('Electricity costs reset successfully', 'success');
+            
+            // Reset display values
+            const currentCostEl = document.getElementById('current-electricity-cost');
+            const totalCostEl = document.getElementById('total-electricity-cost');
+            
+            if (currentCostEl) currentCostEl.textContent = 'RM 0.00';
+            if (totalCostEl) totalCostEl.textContent = 'RM 0.00';
+            
+            // Clear cost chart data
+            chartData.electricityCost = [];
+            chartData.cumulativeCost = [];
+        } else {
+            logMessage(`Failed to reset electricity costs: ${data.message}`, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error resetting electricity costs:', error);
+        logMessage('Error resetting electricity costs', 'error');
+    });
 }
