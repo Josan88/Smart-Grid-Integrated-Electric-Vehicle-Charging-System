@@ -14,10 +14,10 @@ let simStartMonthSelect; // Updated for month selection
 let simStartDaySelect;   // Updated for day selection
 let simStartHourSelect;  // Updated for hour selection
 
-// Charts
-let batteryChart;
-let evChargingChart;
-let gridChart;
+// Charts - removed for simplified dashboard
+// let batteryChart;
+// let evChargingChart;
+// let gridChart;
 
 // Data buffers for charts (limit to last 100 points)
 const MAX_DATA_POINTS = 100;
@@ -32,8 +32,13 @@ const chartData = {
     vehicle3BatteryLevel: [],
     vehicle4BatteryLevel: [],
     electricityCost: [],
-    cumulativeCost: []
+    cumulativeCost: [],
+    pvOutput: []  // Add PV output data tracking
 };
+
+// Solar performance tracking variables
+let dailyPeakPV = 0;  // Track peak PV output for the current day
+let currentDate = '';  // Track current simulation date to reset daily peak
 
 // Parameters management - Declare globally, assign in DOMContentLoaded
 let paramInputs;
@@ -65,17 +70,14 @@ document.addEventListener('DOMContentLoaded', () => {    // Assign DOM elements 
         'bay3_percentage': document.getElementById('bay3_percentage_value'),
         'bay4_percentage': document.getElementById('bay4_percentage_value'),
         'battery_soc': document.getElementById('battery_soc_value')
-    };
-
-    // Check if essential elements were found
+    };    // Check if essential elements were found
     if (!startSimulationBtn) {
         console.error("CRITICAL: #start-simulation-btn not found during DOMContentLoaded!");
     }
-    // Add more checks for other critical elements if necessary
-
-    initializeCharts();
+    // Add more checks for other critical elements if necessary    initializeCharts(); // Keep function call but charts are disabled
     setupEventListeners();
     fetchInitialData();
+    initialize2DVisualization(); // Initialize 2D system visualization
 });
 
 // Socket.IO event handlers
@@ -237,155 +239,11 @@ socket.on('simulation_speed_updated', (data) => {
     }
 });
 
-// Function to initialize all charts
-function initializeCharts() {    // Battery Chart
-    const batteryElement = document.getElementById('battery-chart');
-    if (!batteryElement) {
-        console.error('Battery chart canvas not found');
-        return;
-    }
-    const batteryCtx = batteryElement.getContext('2d');
-    batteryChart = new Chart(batteryCtx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [
-                {
-                    label: 'Battery Level',
-                    data: [],
-                    borderColor: 'rgba(13, 110, 253, 1)',
-                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4,
-                    yAxisID: 'y'
-                },
-                {
-                    label: 'Battery Recharge',
-                    data: [],
-                    borderColor: 'rgba(23, 162, 184, 1)',
-                    backgroundColor: 'rgba(23, 162, 184, 0.1)',
-                    borderWidth: 2,
-                    borderDash: [5, 5],
-                    fill: false,
-                    tension: 0.4,
-                    yAxisID: 'y1'
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            animation: {
-                duration: 0
-            },
-            scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Simulation Time (s)'
-                    }
-                },
-                y: {
-                    position: 'left',
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Level (%)'
-                    },
-                    max: 100
-                },
-                y1: {
-                    position: 'right',
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Recharge (kW)'
-                    },
-                    grid: {
-                        drawOnChartArea: false
-                    }
-                }
-            }
-        }
-    });
-    
-    // EV Charging Chart
-    const evChargingCtx = document.getElementById('ev-charging-chart').getContext('2d');
-    evChargingChart = new Chart(evChargingCtx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'EV Recharge (kW)',
-                data: [],
-                borderColor: 'rgba(40, 167, 69, 1)',
-                backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            animation: {
-                duration: 0
-            },
-            scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Simulation Time (s)'
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Power (kW)'
-                    }
-                }
-            }
-        }
-    });
-    
-    // Grid Chart
-    const gridCtx = document.getElementById('grid-chart').getContext('2d');
-    gridChart = new Chart(gridCtx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'Grid Request (kW)',
-                data: [],
-                borderColor: 'rgba(220, 53, 69, 1)',
-                backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            animation: {
-                duration: 0
-            },
-            scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Simulation Time (s)'
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Power (kW)'
-                    }
-                }
-            }
-        }
-    });
+// Function to initialize charts - removed for simplified dashboard
+// Charts have been replaced with progress bars and summary cards
+function initializeCharts() {
+    console.log('Chart initialization skipped - using simplified dashboard');
+    // No chart initialization needed - using progress bars and visual indicators instead
 }
 
 // Function to populate days in month based on the selected month
@@ -742,12 +600,10 @@ function processSimulationData(data) {
             if (data.vehicle2_battery_level && i < data.vehicle2_battery_level.length) chartData.vehicle2BatteryLevel.push(data.vehicle2_battery_level[i]);
             if (data.vehicle3_battery_level && i < data.vehicle3_battery_level.length) chartData.vehicle3BatteryLevel.push(data.vehicle3_battery_level[i]);
             if (data.vehicle4_battery_level && i < data.vehicle4_battery_level.length) chartData.vehicle4BatteryLevel.push(data.vehicle4_battery_level[i]);
-        }
-        
-        trimChartData();
-        updateCharts();
-        updateCurrentValues();
-        updateEVBatteryStatus();
+        }        trimChartData();
+        // updateCharts(); // Removed - no charts to update
+        updateCurrentValues();        updateProgressIndicators(); // Update progress bars and visual indicators
+        update2DVisualization(); // Update 2D system visualization
     }
 }
 
@@ -763,19 +619,25 @@ function processSingleDataPoint(data) {
     chartData.vehicle3BatteryLevel.push(data.vehicle3_battery_level);
     chartData.vehicle4BatteryLevel.push(data.vehicle4_battery_level);
     
+    // Add PV output data if available
+    if (data.pv_output_watts !== undefined) {
+        chartData.pvOutput.push(data.pv_output_watts);
+    } else {
+        chartData.pvOutput.push(0); // Default to 0 if no PV data
+    }
+    
     // Add cost data if available
     if (data.electricity_cost !== undefined) {
         chartData.electricityCost.push(data.electricity_cost);
     }
     if (data.cumulative_cost !== undefined) {
         chartData.cumulativeCost.push(data.cumulative_cost);
-    }
-
-    trimChartData();
-    updateCharts();
-    updateCurrentValues(); // Update dashboard numbers
-    updateEVBatteryStatus(); // Update EV status displays
+    }    trimChartData();
+    // updateCharts(); // Removed - no charts to update    updateCurrentValues(); // Update dashboard numbers
+    updateProgressIndicators(); // Update progress bars and visual indicators
     updateCostDisplay(data); // Update cost information
+    updateSolarPerformance(data); // Update solar performance metrics
+    update2DVisualization(); // Update 2D system visualization
 
     // Update peak status display
     if (data.grid_peak_status !== undefined) {
@@ -804,6 +666,7 @@ function trimChartData() {
         chartData.vehicle4BatteryLevel.splice(0, excess);
         chartData.electricityCost.splice(0, excess);
         chartData.cumulativeCost.splice(0, excess);
+        chartData.pvOutput.splice(0, excess);
     }
 }
 
@@ -877,23 +740,10 @@ function updateSimulationTime(data) {
 }
 */
 
-// Update all charts with current data
+// Update all charts with current data - replaced with progress indicators
 function updateCharts() {
-    // Update Battery Chart
-    batteryChart.data.labels = chartData.time;
-    batteryChart.data.datasets[0].data = chartData.batteryValues;
-    batteryChart.data.datasets[1].data = chartData.batteryRecharge;
-    batteryChart.update();
-    
-    // Update EV Charging Chart
-    evChargingChart.data.labels = chartData.time;
-    evChargingChart.data.datasets[0].data = chartData.evRecharge;
-    evChargingChart.update();
-    
-    // Update Grid Chart
-    gridChart.data.labels = chartData.time;
-    gridChart.data.datasets[0].data = chartData.gridRequest;
-    gridChart.update();
+    // Charts removed - functionality replaced with updateProgressIndicators()
+    console.log('Chart updates skipped - using simplified dashboard');
 }
 
 // Update current values displayed in the dashboard
@@ -915,87 +765,19 @@ function updateCurrentValues() {
         document.getElementById('current-ev-recharge').textContent = 
             `${lastEVRecharge.toFixed(2)} kW`;
     }
-    
-    if (chartData.gridRequest.length > 0) {
+      if (chartData.gridRequest.length > 0) {
         const lastGridRequest = chartData.gridRequest[chartData.gridRequest.length - 1];
         document.getElementById('current-grid-request').textContent = 
             `${lastGridRequest.toFixed(2)} kW`;
     }
-}
-
-// Update EV battery status displays
-function updateEVBatteryStatus() {
-    // Update EV 1 status
-    if (chartData.vehicle1BatteryLevel.length > 0) {
-        const ev1Level = chartData.vehicle1BatteryLevel[chartData.vehicle1BatteryLevel.length - 1];
-        const ev1Occupied = document.getElementById('bay1_occupied').checked;
-        
-        updateEVDisplay('ev1', ev1Level, ev1Occupied);
-    }
     
-    // Update EV 2 status
-    if (chartData.vehicle2BatteryLevel.length > 0) {
-        const ev2Level = chartData.vehicle2BatteryLevel[chartData.vehicle2BatteryLevel.length - 1];
-        const ev2Occupied = document.getElementById('bay2_occupied').checked;
-        
-        updateEVDisplay('ev2', ev2Level, ev2Occupied);
-    }
-    
-    // Update EV 3 status
-    if (chartData.vehicle3BatteryLevel.length > 0) {
-        const ev3Level = chartData.vehicle3BatteryLevel[chartData.vehicle3BatteryLevel.length - 1];
-        const ev3Occupied = document.getElementById('bay3_occupied').checked;
-        
-        updateEVDisplay('ev3', ev3Level, ev3Occupied);
-    }
-    
-    // Update EV 4 status
-    if (chartData.vehicle4BatteryLevel.length > 0) {
-        const ev4Level = chartData.vehicle4BatteryLevel[chartData.vehicle4BatteryLevel.length - 1];
-        const ev4Occupied = document.getElementById('bay4_occupied').checked;
-        
-        updateEVDisplay('ev4', ev4Level, ev4Occupied);
-    }
-}
-
-// Helper function to update an EV display
-function updateEVDisplay(evId, level, occupied) {
-    const progressBar = document.getElementById(`${evId}-progress`);
-    const statusBadge = document.getElementById(`${evId}-status`);
-    
-    if (!progressBar || !statusBadge) return;
-    
-    // Set progress bar value
-    progressBar.style.width = `${level}%`;
-    progressBar.textContent = `${level.toFixed(1)}%`;
-    progressBar.setAttribute('aria-valuenow', level);
-    
-    // Set the appropriate color based on charge level
-    if (level >= 80) {
-        progressBar.className = 'progress-bar bg-success';
-    } else if (level >= 50) {
-        progressBar.className = 'progress-bar bg-info';
-    } else if (level >= 20) {
-        progressBar.className = 'progress-bar bg-warning';
-    } else {
-        progressBar.className = 'progress-bar bg-danger';
-    }
-    
-    // Set status badge
-    if (!occupied) {
-        statusBadge.textContent = 'Empty';
-        statusBadge.className = 'mb-0 badge bg-secondary';
-        progressBar.style.width = '0%';
-        progressBar.textContent = '0%';
-    } else if (level >= 100) {
-        statusBadge.textContent = 'Fully Charged';
-        statusBadge.className = 'mb-0 badge bg-success';
-    } else if (level > 0) {
-        statusBadge.textContent = 'Charging';
-        statusBadge.className = 'mb-0 badge bg-primary';
-    } else {
-        statusBadge.textContent = 'Connected';
-        statusBadge.className = 'mb-0 badge bg-warning';
+    // Update current PV output
+    if (chartData.pvOutput.length > 0) {
+        const lastPVOutput = chartData.pvOutput[chartData.pvOutput.length - 1];
+        const pvOutputElement = document.getElementById('current-pv-output');
+        if (pvOutputElement) {
+            pvOutputElement.textContent = `${(lastPVOutput / 1000).toFixed(2)} kW`; // Convert watts to kW
+        }
     }
 }
 
@@ -1083,14 +865,6 @@ function logMessage(message, type = 'info') {
 
 // Update electricity cost display
 function updateCostDisplay(data) {
-    // Update current electricity cost
-    if (data.electricity_cost !== undefined) {
-        const currentCostEl = document.getElementById('current-electricity-cost');
-        if (currentCostEl) {
-            currentCostEl.textContent = `${data.currency || 'RM'} ${data.electricity_cost.toFixed(4)}`;
-        }
-    }
-    
     // Update total cumulative cost
     if (data.cumulative_cost !== undefined) {
         const totalCostEl = document.getElementById('total-electricity-cost');
@@ -1153,7 +927,7 @@ function updateElectricityPricing(formData) {
         off_peak_rate: parseFloat(formData.get('off-peak-rate')),
         currency: 'RM',
         peak_start_hour: parseInt(formData.get('peak-start')),
-        peak_end_hour: parseInt(formData.get('peak-end'))
+        peak_end_hour: parseInt(formData.get('off-peak-end'))
     };
     
     fetch('/api/electricity/pricing', {
@@ -1185,16 +959,13 @@ function resetElectricityCosts() {
             'Content-Type': 'application/json',
         }
     })
-    .then(response => response.json())
-    .then(data => {
+    .then(response => response.json())    .then(data => {
         if (data.success) {
             logMessage('Electricity costs reset successfully', 'success');
             
             // Reset display values
-            const currentCostEl = document.getElementById('current-electricity-cost');
             const totalCostEl = document.getElementById('total-electricity-cost');
             
-            if (currentCostEl) currentCostEl.textContent = 'RM 0.00';
             if (totalCostEl) totalCostEl.textContent = 'RM 0.00';
             
             // Clear cost chart data
@@ -1208,4 +979,481 @@ function resetElectricityCosts() {
         console.error('Error resetting electricity costs:', error);
         logMessage('Error resetting electricity costs', 'error');
     });
+}
+
+// Update progress indicators and visual elements (replaces chart functionality)
+function updateProgressIndicators() {
+    // Update system battery progress bar
+    if (chartData.batteryValues.length > 0) {
+        const batteryLevel = chartData.batteryValues[chartData.batteryValues.length - 1];
+        const systemBatteryProgress = document.getElementById('system-battery-progress');
+        if (systemBatteryProgress) {
+            const percentage = Math.max(0, Math.min(100, batteryLevel));
+            systemBatteryProgress.style.width = `${percentage}%`;
+            systemBatteryProgress.setAttribute('aria-valuenow', percentage);
+            systemBatteryProgress.textContent = `${percentage.toFixed(1)}%`;
+            
+            // Update color based on battery level
+            systemBatteryProgress.className = 'progress-bar';
+            if (percentage > 60) {
+                systemBatteryProgress.classList.add('bg-success');
+            } else if (percentage > 30) {
+                systemBatteryProgress.classList.add('bg-warning');
+            } else {
+                systemBatteryProgress.classList.add('bg-danger');
+            }
+        }
+    }
+    
+    // Update grid load indicator
+    if (chartData.gridRequest.length > 0) {
+        const gridRequest = chartData.gridRequest[chartData.gridRequest.length - 1];
+        const gridLoadProgress = document.getElementById('grid-load-progress');
+        if (gridLoadProgress) {
+            // Assume max grid capacity of 100 kW for percentage calculation
+            const maxGridCapacity = 100;
+            const percentage = Math.max(0, Math.min(100, (gridRequest / maxGridCapacity) * 100));
+            gridLoadProgress.style.width = `${percentage}%`;
+            gridLoadProgress.setAttribute('aria-valuenow', percentage);
+            gridLoadProgress.textContent = `${gridRequest.toFixed(2)} kW`;
+            
+            // Update color based on grid load
+            gridLoadProgress.className = 'progress-bar';
+            if (percentage > 80) {
+                gridLoadProgress.classList.add('bg-danger');
+            } else if (percentage > 60) {
+                gridLoadProgress.classList.add('bg-warning');
+            } else {
+                gridLoadProgress.classList.add('bg-success');
+            }
+        }
+    }
+}
+
+// ===== 2D SYSTEM VISUALIZATION FUNCTIONS =====
+
+/**
+ * Update the 2D system visualization with real-time data
+ */
+function update2DVisualization() {
+    if (chartData.time.length === 0) return;
+    
+    const latestIndex = chartData.time.length - 1;
+    
+    // Update Solar System
+    updateSolarComponent(latestIndex);
+    
+    // Update Battery System
+    updateBatteryComponent(latestIndex);
+    
+    // Update Grid System
+    updateGridComponent(latestIndex);
+    
+    // Update EV Charging Bays
+    updateEVBays(latestIndex);
+    
+    // Update Energy Flows
+    updateEnergyFlows(latestIndex);
+}
+
+/**
+ * Update solar component visualization
+ */
+function updateSolarComponent(index) {
+    const pvOutput = chartData.pvOutput[index] || 0;
+    const solarOutputEl = document.getElementById('solar-output');
+    const solarStatusEl = document.getElementById('solar-status');
+    const solarComponent = document.getElementById('solar-component');
+    
+    if (solarOutputEl) {
+        solarOutputEl.textContent = `${pvOutput.toFixed(2)} kW`;
+    }
+    
+    if (solarStatusEl && solarComponent) {
+        if (pvOutput > 0) {
+            solarStatusEl.textContent = 'Generating';
+            solarComponent.classList.add('active');
+            solarComponent.classList.remove('warning', 'error');
+        } else {
+            solarStatusEl.textContent = 'Inactive';
+            solarComponent.classList.remove('active', 'warning', 'error');
+        }
+    }
+}
+
+/**
+ * Update battery component visualization
+ */
+function updateBatteryComponent(index) {
+    const batteryLevel = chartData.batteryValues[index] || 0;
+    const batteryRecharge = chartData.batteryRecharge[index] || 0;
+    
+    const batteryFill = document.getElementById('battery-fill');
+    const batteryPercentage = document.getElementById('battery-percentage');
+    const batteryPower = document.getElementById('battery-power');
+    const batteryComponent = document.getElementById('battery-component');
+    
+    if (batteryFill) {
+        batteryFill.style.height = `${Math.max(0, Math.min(100, batteryLevel))}%`;
+        
+        // Change color based on battery level
+        if (batteryLevel > 60) {
+            batteryFill.style.background = 'linear-gradient(180deg, #28a745 0%, #20c997 100%)';
+        } else if (batteryLevel > 30) {
+            batteryFill.style.background = 'linear-gradient(180deg, #ffc107 0%, #ffb300 100%)';
+        } else {
+            batteryFill.style.background = 'linear-gradient(180deg, #dc3545 0%, #c82333 100%)';
+        }
+    }
+    
+    if (batteryPercentage) {
+        batteryPercentage.textContent = `${batteryLevel.toFixed(0)}%`;
+    }
+    
+    if (batteryPower) {
+        const powerText = batteryRecharge >= 0 ? `+${batteryRecharge.toFixed(2)} kW` : `${batteryRecharge.toFixed(2)} kW`;
+        batteryPower.textContent = powerText;
+        batteryPower.style.color = batteryRecharge >= 0 ? '#28a745' : '#dc3545';
+    }
+    
+    if (batteryComponent) {
+        if (batteryLevel > 60) {
+            batteryComponent.classList.add('active');
+            batteryComponent.classList.remove('warning', 'error');
+        } else if (batteryLevel > 30) {
+            batteryComponent.classList.add('warning');
+            batteryComponent.classList.remove('active', 'error');
+        } else {
+            batteryComponent.classList.add('error');
+            batteryComponent.classList.remove('active', 'warning');
+        }
+    }
+}
+
+/**
+ * Update grid component visualization
+ */
+function updateGridComponent(index) {
+    const gridRequest = chartData.gridRequest[index] || 0;
+    const gridPowerEl = document.getElementById('grid-power');
+    const peakIndicatorEl = document.getElementById('peak-indicator');
+    const gridComponent = document.getElementById('grid-component');
+    
+    if (gridPowerEl) {
+        gridPowerEl.textContent = `${gridRequest.toFixed(2)} kW`;
+    }
+    
+    // Get peak status from the display element
+    const peakStatusEl = document.getElementById('grid-peak-status');
+    const peakStatus = peakStatusEl ? peakStatusEl.textContent : 'Off-Peak';
+    
+    if (peakIndicatorEl) {
+        peakIndicatorEl.textContent = peakStatus;
+        peakIndicatorEl.style.color = peakStatus.includes('Peak') ? '#dc3545' : '#28a745';
+    }
+    
+    if (gridComponent) {
+        if (Math.abs(gridRequest) > 10) {
+            gridComponent.classList.add('warning');
+            gridComponent.classList.remove('active', 'error');
+        } else if (Math.abs(gridRequest) > 20) {
+            gridComponent.classList.add('error');
+            gridComponent.classList.remove('active', 'warning');
+        } else {
+            gridComponent.classList.add('active');
+            gridComponent.classList.remove('warning', 'error');
+        }
+    }
+}
+
+/**
+ * Update EV charging bays visualization
+ */
+function updateEVBays(index) {
+    const evData = [
+        {
+            batteryLevel: chartData.vehicle1BatteryLevel[index] || 0,
+            occupied: document.getElementById('bay1_occupied')?.checked || false,
+            bayId: 1
+        },
+        {
+            batteryLevel: chartData.vehicle2BatteryLevel[index] || 0,
+            occupied: document.getElementById('bay2_occupied')?.checked || false,
+            bayId: 2
+        },
+        {
+            batteryLevel: chartData.vehicle3BatteryLevel[index] || 0,
+            occupied: document.getElementById('bay3_occupied')?.checked || false,
+            bayId: 3
+        },
+        {
+            batteryLevel: chartData.vehicle4BatteryLevel[index] || 0,
+            occupied: document.getElementById('bay4_occupied')?.checked || false,
+            bayId: 4
+        }
+    ];
+    
+    const evRecharge = chartData.evRecharge[index] || 0;
+    const chargingRatePerBay = evData.filter(ev => ev.occupied).length > 0 ? 
+        evRecharge / evData.filter(ev => ev.occupied).length : 0;
+    
+    evData.forEach(ev => {
+        updateEVBayVisualization(ev.bayId, ev.batteryLevel, ev.occupied, chargingRatePerBay);
+    });
+}
+
+/**
+ * Update individual EV bay visualization
+ */
+function updateEVBayVisualization(bayId, batteryLevel, occupied, chargingRate) {
+    const batteryFill = document.getElementById(`ev${bayId}-battery-fill`);
+    const batteryText = document.getElementById(`ev${bayId}-battery-text`);
+    const chargingRateEl = document.getElementById(`ev${bayId}-charging-rate`);
+    const statusEl = document.getElementById(`ev${bayId}-status`);
+    const bayComponent = document.getElementById(`ev-bay-${bayId}`);
+    
+    if (batteryFill) {
+        batteryFill.style.height = `${Math.max(0, Math.min(100, batteryLevel))}%`;
+    }
+    
+    if (batteryText) {
+        batteryText.textContent = `${batteryLevel.toFixed(0)}%`;
+    }
+    
+    if (chargingRateEl) {
+        if (occupied && chargingRate > 0) {
+            chargingRateEl.textContent = `${chargingRate.toFixed(2)} kW`;
+        } else {
+            chargingRateEl.textContent = '0.00 kW';
+        }
+    }
+    
+    if (statusEl) {
+        let status = '';
+        let statusClass = '';
+        
+        if (!occupied) {
+            status = 'Empty';
+            statusClass = 'empty';
+        } else if (batteryLevel >= 100) {
+            status = 'Full';
+            statusClass = 'full';
+        } else if (chargingRate > 0) {
+            status = 'Charging';
+            statusClass = 'charging';
+        } else {
+            status = 'Connected';
+            statusClass = 'occupied';
+        }
+        
+        statusEl.textContent = status;
+        statusEl.className = `bay-status ${statusClass}`;
+    }
+    
+    if (bayComponent) {
+        if (occupied && chargingRate > 0) {
+            bayComponent.classList.add('active');
+            bayComponent.classList.remove('warning', 'error');
+        } else if (occupied) {
+            bayComponent.classList.add('warning');
+            bayComponent.classList.remove('active', 'error');
+        } else {
+            bayComponent.classList.remove('active', 'warning', 'error');
+        }
+    }
+}
+
+/**
+ * Update energy flow animations
+ */
+function updateEnergyFlows(index) {
+    const pvOutput = chartData.pvOutput[index] || 0;
+    const batteryRecharge = chartData.batteryRecharge[index] || 0;
+    const evRecharge = chartData.evRecharge[index] || 0;
+    const gridRequest = chartData.gridRequest[index] || 0;
+    
+    // Solar flows
+    const solarToBattery = document.getElementById('flow-solar-battery');
+    const solarToGrid = document.getElementById('flow-solar-grid');
+    const solarToEvs = document.getElementById('flow-solar-evs');
+    
+    // Battery flows
+    const batteryToEvs = document.getElementById('flow-battery-evs');
+    const batteryToGrid = document.getElementById('flow-battery-grid');
+    
+    // Grid flows
+    const gridToEvs = document.getElementById('flow-grid-evs');
+    
+    // Clear all active flows first
+    [solarToBattery, solarToGrid, solarToEvs, batteryToEvs, batteryToGrid, gridToEvs].forEach(flow => {
+        if (flow) flow.classList.remove('active');
+    });
+    
+    // Activate flows based on data
+    if (pvOutput > 0) {
+        if (batteryRecharge > 0 && solarToBattery) {
+            solarToBattery.classList.add('active');
+        }
+        
+        if (evRecharge > 0 && pvOutput >= evRecharge && solarToEvs) {
+            solarToEvs.classList.add('active');
+        }
+        
+        if (gridRequest < 0 && solarToGrid) { // Excess solar to grid
+            solarToGrid.classList.add('active');
+        }
+    }
+    
+    if (batteryRecharge < 0) { // Battery discharging
+        if (evRecharge > 0 && batteryToEvs) {
+            batteryToEvs.classList.add('active');
+        }
+        
+        if (gridRequest > 0 && batteryToGrid) {
+            batteryToGrid.classList.add('active');
+        }
+    }
+    
+    if (gridRequest > 0 && gridToEvs) { // Grid supplying power
+        gridToEvs.classList.add('active');
+    }
+}
+
+/**
+ * Initialize 2D visualization on page load
+ */
+function initialize2DVisualization() {
+    // Set initial states
+    const components = document.querySelectorAll('.component');
+    components.forEach(component => {
+        component.classList.remove('active', 'warning', 'error');
+    });
+    
+    // Initialize all values to zero
+    update2DVisualization();
+    
+    console.log('2D System Visualization initialized');
+}
+
+// Update EV charging summary information
+function updateEVChargingSummary() {
+    // Count active charging bays
+    let activeBays = 0;
+    const bayOccupiedIds = ['bay1_occupied', 'bay2_occupied', 'bay3_occupied', 'bay4_occupied'];
+    
+    bayOccupiedIds.forEach(id => {
+        const checkbox = document.getElementById(id);
+        if (checkbox && checkbox.checked) {
+            activeBays++;
+        }
+    });
+    
+    // Update active charging bays display
+    const activeChargingBaysEl = document.getElementById('active-charging-bays');
+    if (activeChargingBaysEl) {
+        activeChargingBaysEl.textContent = activeBays;
+    }
+    
+    // Calculate and update charging efficiency
+    if (chartData.evRecharge.length > 0) {
+        const totalEVRecharge = chartData.evRecharge[chartData.evRecharge.length - 1];
+        const chargingEfficiencyEl = document.getElementById('charging-efficiency');
+        if (chargingEfficiencyEl) {
+            const efficiency = activeBays > 0 ? (totalEVRecharge / activeBays) : 0;
+            chargingEfficiencyEl.textContent = `${efficiency.toFixed(2)} kW/bay`;
+        }
+        
+        // Update charging status
+        const chargingStatusEl = document.getElementById('charging-status');
+        if (chargingStatusEl) {
+            if (activeBays === 0) {
+                chargingStatusEl.textContent = 'Idle';
+                chargingStatusEl.className = 'badge bg-secondary';
+            } else if (totalEVRecharge > 0) {
+                chargingStatusEl.textContent = 'Active';
+                chargingStatusEl.className = 'badge bg-success';
+            } else {
+                chargingStatusEl.textContent = 'Standby';
+                chargingStatusEl.className = 'badge bg-warning';
+            }
+        }
+    }
+}
+
+// Update solar performance metrics
+function updateSolarPerformance(data) {
+    // Update current PV output and track daily peak
+    if (data.pv_output_watts !== undefined) {
+        const currentPV = data.pv_output_watts / 1000; // Convert to kW
+        
+        // Extract date from simulation time to track daily peaks
+        const simDate = data.time ? data.time.split(' ')[0] : '';
+        
+        // Reset daily peak if new day
+        if (simDate !== currentDate) {
+            currentDate = simDate;
+            dailyPeakPV = 0;
+        }
+        
+        // Update daily peak
+        if (currentPV > dailyPeakPV) {
+            dailyPeakPV = currentPV;
+        }
+        
+        // Update PV peak today display
+        const pvPeakElement = document.getElementById('pv-peak-today');
+        if (pvPeakElement) {
+            pvPeakElement.textContent = `${dailyPeakPV.toFixed(2)} kW`;
+        }
+        
+        // Calculate efficiency (assuming 10kW system capacity as typical)
+        const systemCapacity = 10.0; // kW - this could be made configurable
+        const efficiency = (currentPV / systemCapacity) * 100;
+        
+        // Update efficiency display
+        const pvEfficiencyElement = document.getElementById('pv-efficiency');
+        if (pvEfficiencyElement) {
+            pvEfficiencyElement.textContent = `${efficiency.toFixed(1)}%`;
+        }
+    }
+    
+    // Update weather status based on PV output and other indicators
+    updateWeatherStatus(data);
+}
+
+// Update weather status display
+function updateWeatherStatus(data) {
+    const weatherStatusElement = document.getElementById('weather-status');
+    if (!weatherStatusElement) return;
+    
+    let weatherStatus = 'Unknown';
+    let statusClass = 'text-muted';
+    
+    // Determine weather status based on PV output
+    if (data.pv_output_watts !== undefined) {
+        const currentPV = data.pv_output_watts / 1000; // Convert to kW
+        const systemCapacity = 10.0; // kW
+        const efficiency = (currentPV / systemCapacity) * 100;
+        
+        // Simple weather determination based on solar efficiency
+        if (efficiency >= 80) {
+            weatherStatus = 'Sunny';
+            statusClass = 'text-success';
+        } else if (efficiency >= 50) {
+            weatherStatus = 'Partly Cloudy';
+            statusClass = 'text-warning';
+        } else if (efficiency >= 20) {
+            weatherStatus = 'Cloudy';
+            statusClass = 'text-info';
+        } else if (efficiency > 0) {
+            weatherStatus = 'Overcast';
+            statusClass = 'text-secondary';
+        } else {
+            weatherStatus = 'Night/No Sun';
+            statusClass = 'text-dark';
+        }
+    }
+    
+    weatherStatusElement.textContent = weatherStatus;
+    weatherStatusElement.className = statusClass;
 }
