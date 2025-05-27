@@ -1066,7 +1066,7 @@ function updateSolarComponent(index) {
     const solarComponent = document.getElementById('solar-component');
     
     if (solarOutputEl) {
-        solarOutputEl.textContent = `${pvOutput.toFixed(2)} kW`;
+        solarOutputEl.textContent = `${pvOutput.toFixed(2)} W`;
     }
     
     if (solarStatusEl && solarComponent) {

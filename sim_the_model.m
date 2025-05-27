@@ -34,7 +34,7 @@ arguments
 end
 
 %% Create the SimulationInput object
-% Note that the name of the model is hard-coded to 'Prototype'
+% Note that the name of the model is hard-coded to 'CompleteV1'
 si = Simulink.SimulationInput('CompleteV1');
 
 %% Load the StopTime into the SimulationInput object
@@ -82,11 +82,11 @@ end
 %% OutputFcn
 prevSimTime = nan;
     function locPostStepFcn(simTime)
-        so = simulink.compiler.getSimulationOutput('Prototype');
+        so = simulink.compiler.getSimulationOutput('CompleteV1');
         res = extractResults(so, prevSimTime);
         stopRequested = feval(args.OutputFcn, simTime, res);
         if stopRequested
-            simulink.compiler.stopSimulation('Prototype');
+            simulink.compiler.stopSimulation('CompleteV1');
         end
         prevSimTime = simTime;
     end
