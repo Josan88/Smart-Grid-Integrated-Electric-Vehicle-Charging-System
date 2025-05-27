@@ -247,7 +247,7 @@ body {
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     border-radius: 10px;
     padding: 20px;
-    overflow: hidden;
+    overflow: visible; /* Allow energy flows to extend beyond container */
     box-shadow: inset 0 2px 8px rgba(0,0,0,0.1);
 }
 
@@ -259,7 +259,8 @@ body {
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     transition: all 0.3s ease;
     border: 2px solid transparent;
-    overflow: hidden;
+    overflow: visible;
+    z-index: 5;
 }
 
 .component:hover {
@@ -498,39 +499,252 @@ body {
 /* Energy Flow Animations */
 .energy-flow {
     position: absolute;
-    height: 4px;
+    height: 8px;
     background: transparent;
-    z-index: 1;
+    z-index: 15;
     pointer-events: none;
+    overflow: visible;
+    border-radius: 4px;
+    /* Ensure flows are always visible */
+    min-width: 40px;
 }
 
+/* Base flow line (always visible, subtle) */
 .energy-flow::before {
     content: '';
     position: absolute;
-    top: 0;
+    top: 2px;
     left: 0;
-    height: 100%;
-    width: 0%;
+    height: 4px;
+    width: 100%;
     border-radius: 2px;
-    transition: width 0.8s ease;
+    opacity: 0.2;
+    background: #ddd;
+    transition: all 0.3s ease;
+}
+
+/* Active flow animation (moving particles) */
+.energy-flow::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -20px;
+    height: 8px;
+    width: 40px;
+    border-radius: 4px;
+    opacity: 0;
+    transform: translateX(0);
+    transition: opacity 0.3s ease;
 }
 
 .energy-flow.active::before {
-    width: 100%;
-    animation: energyPulse 2s infinite;
+    opacity: 0.6;
+    box-shadow: 0 0 8px rgba(0,0,0,0.2);
 }
 
-@keyframes energyPulse {
-    0%, 100% { opacity: 0.6; }
-    50% { opacity: 1; }
+.energy-flow.active::after {
+    opacity: 1;
+    animation: flowParticle 1.5s linear infinite;
 }
 
-/* Solar Energy Flows */
+/* Enhanced particle flow animation */
+@keyframes flowParticle {
+    0% { 
+        transform: translateX(0) scale(0.8);
+        opacity: 0;
+    }
+    10% { 
+        opacity: 1;
+        transform: translateX(20px) scale(1);
+    }
+    90% { 
+        opacity: 1;
+        transform: translateX(calc(100% + 20px)) scale(1);
+    }
+    100% { 
+        opacity: 0;
+        transform: translateX(calc(100% + 40px)) scale(0.8);
+    }
+}
+
+/* Pulsing glow effect for high-power flows */
+.energy-flow.high-power::before {
+    animation: powerPulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes powerPulse {
+    from { 
+        box-shadow: 0 0 8px rgba(0,0,0,0.2);
+        transform: scaleY(1);
+    }
+    to { 
+        box-shadow: 0 0 15px rgba(0,0,0,0.4);
+        transform: scaleY(1.2);
+    }
+}
+
+/* Power Level Responsive Effects */
+.energy-flow.ultra-power::after {
+    animation: flowParticleBurst 0.6s linear infinite;
+    width: 70px;
+    height: 14px;
+    filter: brightness(1.5) saturate(1.3);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+}
+
+.energy-flow.high-power::after {
+    animation: flowParticleTrail 0.8s linear infinite;
+    width: 60px;
+    height: 12px;
+    filter: brightness(1.3) saturate(1.2);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
+}
+
+.energy-flow.medium-power::after {
+    animation: flowParticle 1.2s linear infinite;
+    width: 50px;
+    height: 10px;
+    filter: brightness(1.1);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+}
+
+.energy-flow.low-power::after {
+    animation: flowParticle 1.8s linear infinite;
+    width: 40px;
+    height: 6px;
+    opacity: 0.8;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
+}
+
+/* Enhanced Particle Animations */
+@keyframes flowParticleTrail {
+    0% { 
+        transform: translateX(0) scale(0.6);
+        opacity: 0;
+        filter: blur(0px);
+    }
+    5% { 
+        opacity: 1;
+        transform: translateX(10px) scale(1);
+        filter: blur(0px);
+    }
+    15% { 
+        transform: translateX(30px) scale(1.1);
+        filter: blur(0px);
+    }
+    85% { 
+        opacity: 1;
+        transform: translateX(calc(100% + 10px)) scale(1.1);
+        filter: blur(0px);
+    }
+    95% { 
+        transform: translateX(calc(100% + 30px)) scale(1);
+        filter: blur(1px);
+    }
+    100% { 
+        opacity: 0;
+        transform: translateX(calc(100% + 50px)) scale(0.6);
+        filter: blur(2px);
+    }
+}
+
+@keyframes flowParticleBurst {
+    0% { 
+        transform: translateX(0) scale(0.4);
+        opacity: 0;
+        filter: blur(0px) brightness(2);
+    }
+    3% { 
+        opacity: 1;
+        transform: translateX(15px) scale(1.2);
+        filter: blur(0px) brightness(1.8);
+    }
+    10% { 
+        transform: translateX(35px) scale(1.4);
+        filter: blur(0px) brightness(1.5);
+    }
+    90% { 
+        opacity: 1;
+        transform: translateX(calc(100% + 15px)) scale(1.4);
+        filter: blur(1px) brightness(1.5);
+    }
+    97% { 
+        transform: translateX(calc(100% + 35px)) scale(1.2);
+        filter: blur(2px) brightness(1.8);
+    }
+    100% { 
+        opacity: 0;
+        transform: translateX(calc(100% + 60px)) scale(0.4);
+        filter: blur(3px) brightness(2);
+    }
+}
+
+/* Burst Effect for High Power Flows */
+.energy-flow.burst-effect::before {
+    animation: powerPulse 0.8s ease-in-out infinite alternate,
+               ultraGlow 1.2s ease-in-out infinite;
+}
+
+@keyframes ultraGlow {
+    0%, 100% { 
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+        filter: brightness(1.2) saturate(1.1);
+    }
+    50% { 
+        box-shadow: 0 0 25px rgba(255, 255, 255, 0.8);
+        filter: brightness(1.5) saturate(1.3);
+    }
+}
+
+/* Multi-Particle System for High Power */
+.energy-flow.high-power::before,
+.energy-flow.ultra-power::before {
+    background: repeating-linear-gradient(
+        90deg,
+        currentColor 0px,
+        transparent 2px,
+        transparent 4px,
+        currentColor 6px
+    );
+    animation-delay: var(--particle-delay-1, 0s);
+}
+
+/* CSS Custom Properties for Particle Delays */
+.energy-flow {
+    --particle-delay-1: 0s;
+    --particle-delay-2: 0.2s;
+    --particle-delay-3: 0.4s;
+}
+
+/* Energy Type Specific Particle Colors with Enhanced Effects */
+.solar-to-battery::after,
+.solar-to-grid::after,
+.solar-to-evs::after {
+    background: radial-gradient(ellipse at center, #ffc107, #ff8f00, #e65100);
+    box-shadow: 0 0 15px rgba(255, 193, 7, 0.7), 
+                inset 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.battery-to-evs::after,
+.battery-to-grid::after {
+    background: radial-gradient(ellipse at center, #28a745, #20c997, #17a2b8);
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.7), 
+                inset 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.grid-to-evs::after {
+    background: radial-gradient(ellipse at center, #dc3545, #c82333, #bd2130);
+    box-shadow: 0 0 15px rgba(220, 53, 69, 0.7), 
+                inset 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+/* Solar Energy Flows - Fixed positioning from Solar Panel */
 .solar-to-battery {
-    top: 80px;
-    left: 230px;
-    width: 280px;
-    transform: rotate(25deg);
+    top: 100px; /* Solar Right-Center Y */
+    left: 250px; /* Solar Right-Center X */
+    width: 471.6px;
+    transform: rotate(1.21deg); /* Approx atan2(10, 471.6) */
+    transform-origin: 0 4px;
 }
 
 .solar-to-battery::before {
@@ -538,10 +752,11 @@ body {
 }
 
 .solar-to-grid {
-    top: 140px;
-    left: 230px;
-    width: 350px;
-    transform: rotate(-15deg);
+    top: 160px; /* Solar Bottom-Center Y */
+    left: 160px; /* Solar Bottom-Center X */
+    width: 709.1px;
+    transform: rotate(23.26deg); /* Approx atan2(320, 709.1) */
+    transform-origin: 0 4px;
 }
 
 .solar-to-grid::before {
@@ -549,22 +764,24 @@ body {
 }
 
 .solar-to-evs {
-    top: 140px;
-    left: 230px;
-    width: 200px;
-    transform: rotate(45deg);
+    top: 160px; /* Solar Bottom-Center Y */
+    left: 160px; /* Solar Bottom-Center X */
+    width: 291.04px;
+    transform: rotate(76.07deg); /* Approx atan2(205, 291.04) */
+    transform-origin: 0 4px;
 }
 
 .solar-to-evs::before {
     background: linear-gradient(90deg, #ffc107, #ff8f00);
 }
 
-/* Battery Energy Flows */
+/* Battery Energy Flows - Fixed positioning from Battery */
 .battery-to-evs {
-    top: 160px;
-    right: 230px;
-    width: 280px;
-    transform: rotate(-45deg);
+    top: 110px; /* Battery Left-Center Y */
+    left: 721.5px; /* Battery Left-Center X */
+    width: 593.4px;
+    transform: rotate(145.93deg); /* Approx atan2(185, -200) */
+    transform-origin: 0 4px;
 }
 
 .battery-to-evs::before {
@@ -572,70 +789,27 @@ body {
 }
 
 .battery-to-grid {
-    top: 160px;
-    right: 50px;
-    width: 100px;
-    transform: rotate(90deg);
+    top: 180px; /* Battery Bottom-Center Y */
+    left: 811.5px; /* Battery Bottom-Center X */
+    width: 260px;
+    transform: rotate(90deg); /* Vertical line */
+    transform-origin: 0 4px;
 }
 
 .battery-to-grid::before {
     background: linear-gradient(90deg, #28a745, #20c997);
 }
 
-/* Grid Energy Flows */
+/* Grid Energy Flows - Fixed positioning from Grid */
 .grid-to-evs {
-    bottom: 140px;
-    right: 230px;
-    width: 200px;
-    transform: rotate(45deg);
+    top: 500px; /* Grid Left-Center Y */
+    left: 721.5px; /* Grid Left-Center X */
+    width: 494.85px;
+    transform: rotate(-173.33deg); /* or 186.67deg */
+    transform-origin: 0 4px;
 }
 
 .grid-to-evs::before {
-    background: linear-gradient(90deg, #dc3545, #c82333);
-}
-
-/* Flow Legend */
-.flow-legend {
-    position: absolute;
-    top: 180px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(255, 255, 255, 0.95);
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    min-width: 200px;
-}
-
-.flow-legend h6 {
-    margin: 0 0 10px 0;
-    font-size: 0.9rem;
-    color: #333;
-}
-
-.legend-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 6px;
-    font-size: 0.8rem;
-}
-
-.legend-color {
-    width: 20px;
-    height: 4px;
-    border-radius: 2px;
-}
-
-.legend-color.solar-flow {
-    background: linear-gradient(90deg, #ffc107, #ff8f00);
-}
-
-.legend-color.battery-flow {
-    background: linear-gradient(90deg, #28a745, #20c997);
-}
-
-.legend-color.grid-flow {
     background: linear-gradient(90deg, #dc3545, #c82333);
 }
 
@@ -663,12 +837,27 @@ body {
     
     .charging-bays-container {
         grid-template-columns: 1fr;
-        width: 160px;
+        width: 160px;    }
+    
+    /* Adjust energy flow positioning for medium screens */
+    .solar-to-battery {
+        width: 180px;
+        transform: rotate(25deg);
     }
     
-    .flow-legend {
-        top: 150px;
-        font-size: 0.8rem;
+    .solar-to-grid {
+        width: 240px;
+        transform: rotate(-30deg);
+    }
+    
+    .battery-to-evs {
+        width: 180px;
+        transform: rotate(-70deg);
+    }
+    
+    .battery-to-grid {
+        width: 150px;
+        transform: rotate(50deg);
     }
 }
 
@@ -692,8 +881,54 @@ body {
         height: 90px;
     }
     
+    /* Adjust energy flows for mobile screens */
     .energy-flow {
-        height: 2px;
+        height: 6px;
+    }
+    
+    .solar-to-battery {
+        top: 90px;
+        left: 150px;
+        width: 120px;
+        transform: rotate(30deg);
+    }
+    
+    .solar-to-grid {
+        top: 110px;
+        left: 150px;
+        width: 160px;
+        transform: rotate(-35deg);
+    }
+    
+    .solar-to-evs {
+        top: 110px;
+        left: 80px;
+        width: 100px;
+        transform: rotate(70deg);
+    }
+    
+    .battery-to-evs {
+        top: 110px;
+        right: 120px;
+        width: 120px;
+        transform: rotate(-75deg);
+    }
+    
+    .battery-to-grid {
+        top: 130px;
+        right: 90px;
+        width: 100px;
+        transform: rotate(55deg);
+    }
+      .grid-to-evs {
+        bottom: 120px;
+        right: 120px;
+        width: 120px;
+        transform: rotate(70deg);
+    }
+    
+    .energy-flow {
+        height: 6px;
     }
 }
 
@@ -707,3 +942,19 @@ body {
         font-size: 1.2rem;
     }
 }
+
+/* Development/Debug Helper - Energy Flow Outlines (commented out for production) */
+/*
+.energy-flow {
+    border: 1px dashed rgba(255, 0, 0, 0.3);
+    background: rgba(255, 255, 0, 0.1);
+}
+
+.energy-flow::before {
+    background: rgba(0, 255, 0, 0.3) !important;
+}
+
+.energy-flow::after {
+    background: rgba(0, 0, 255, 0.5) !important;
+}
+*/

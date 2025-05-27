@@ -1066,7 +1066,7 @@ function updateSolarComponent(index) {
     const solarComponent = document.getElementById('solar-component');
     
     if (solarOutputEl) {
-        solarOutputEl.textContent = `${pvOutput.toFixed(2)} W`;
+        solarOutputEl.textContent = `${pvOutput.toFixed(3)} W`;
     }
     
     if (solarStatusEl && solarComponent) {
@@ -1264,7 +1264,7 @@ function updateEVBayVisualization(bayId, batteryLevel, occupied, chargingRate) {
 }
 
 /**
- * Update energy flow animations
+ * Update energy flow animations with enhanced power level effects
  */
 function updateEnergyFlows(index) {
     const pvOutput = chartData.pvOutput[index] || 0;
@@ -1284,38 +1284,70 @@ function updateEnergyFlows(index) {
     // Grid flows
     const gridToEvs = document.getElementById('flow-grid-evs');
     
-    // Clear all active flows first
+    // Clear all active flows and power classes first
     [solarToBattery, solarToGrid, solarToEvs, batteryToEvs, batteryToGrid, gridToEvs].forEach(flow => {
-        if (flow) flow.classList.remove('active');
+        if (flow) {
+            flow.classList.remove('active', 'low-power', 'medium-power', 'high-power', 'ultra-power', 'burst-effect');
+        }
     });
     
-    // Activate flows based on data
+    // Helper function to set flow intensity based on power level
+    function setFlowIntensity(flowElement, powerKW) {
+        if (!flowElement) return;
+        
+        flowElement.classList.add('active');
+        
+        // Convert to kW if needed and determine power level
+        const power = Math.abs(powerKW);
+        
+        if (power > 150) {
+            flowElement.classList.add('ultra-power', 'burst-effect');
+            flowElement.setAttribute('data-flow-rate', `${power.toFixed(1)}kW`);
+        } else if (power > 100) {
+            flowElement.classList.add('high-power', 'burst-effect');
+            flowElement.setAttribute('data-flow-rate', `${power.toFixed(1)}kW`);
+        } else if (power > 20) {
+            flowElement.classList.add('medium-power');
+            flowElement.setAttribute('data-flow-rate', `${power.toFixed(1)}kW`);
+        } else if (power > 5) {
+            flowElement.classList.add('low-power');
+            flowElement.setAttribute('data-flow-rate', `${power.toFixed(1)}kW`);
+        }
+        
+        // Dispatch custom event for real-time monitoring
+        const event = new CustomEvent('energyFlowUpdate', {
+            detail: { element: flowElement, power: power, type: 'flow' }
+        });
+        document.dispatchEvent(event);
+    }
+    
+    // Activate flows based on data with enhanced power level effects
     if (pvOutput > 0) {
         if (batteryRecharge > 0 && solarToBattery) {
-            solarToBattery.classList.add('active');
+            setFlowIntensity(solarToBattery, batteryRecharge);
         }
         
         if (evRecharge > 0 && pvOutput >= evRecharge && solarToEvs) {
-            solarToEvs.classList.add('active');
+            setFlowIntensity(solarToEvs, evRecharge);
         }
         
         if (gridRequest < 0 && solarToGrid) { // Excess solar to grid
-            solarToGrid.classList.add('active');
+            setFlowIntensity(solarToGrid, Math.abs(gridRequest));
         }
     }
     
     if (batteryRecharge < 0) { // Battery discharging
         if (evRecharge > 0 && batteryToEvs) {
-            batteryToEvs.classList.add('active');
+            setFlowIntensity(batteryToEvs, evRecharge);
         }
         
         if (gridRequest > 0 && batteryToGrid) {
-            batteryToGrid.classList.add('active');
+            setFlowIntensity(batteryToGrid, Math.abs(batteryRecharge));
         }
     }
     
     if (gridRequest > 0 && gridToEvs) { // Grid supplying power
-        gridToEvs.classList.add('active');
+        setFlowIntensity(gridToEvs, gridRequest);
     }
 }
 

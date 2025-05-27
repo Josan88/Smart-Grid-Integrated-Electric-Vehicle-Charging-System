@@ -4,7 +4,6 @@ Web application for MATLAB simulation dashboard with PVWatts integration.
 
 import json
 import os
-import random
 import time
 import threading
 import logging
@@ -105,32 +104,34 @@ current_simulation_speed_multiplier = 1.0  # Default speed
 
 # Electricity pricing configuration (Malaysian Ringgit per kWh)
 current_electricity_pricing = {
-    "peak_rate": 0.229,      # RM per kWh during peak hours (8 AM - 10 PM)
+    "peak_rate": 0.229,  # RM per kWh during peak hours (8 AM - 10 PM)
     "off_peak_rate": 0.139,  # RM per kWh during off-peak hours (10 PM - 8 AM)
-    "currency": "RM",       # Currency symbol
-    "peak_start_hour": 8,   # Peak hours start at 8 AM
-    "peak_end_hour": 22,    # Peak hours end at 10 PM (22:00)
+    "currency": "RM",  # Currency symbol
+    "peak_start_hour": 8,  # Peak hours start at 8 AM
+    "peak_end_hour": 22,  # Peak hours end at 10 PM (22:00)
 }
 
 # Cost tracking variables
 total_grid_cost = 0.0  # Total cost accumulated during simulation
-cost_history = []      # List to store cost data points for charting
+cost_history = []  # List to store cost data points for charting
 
 
-def calculate_electricity_cost(grid_request_kw: float, time_hours: float, datetime_obj: datetime) -> dict:
+def calculate_electricity_cost(
+    grid_request_kw: float, time_hours: float, datetime_obj: datetime
+) -> dict:
     """
     Calculate electricity cost based on grid usage and time.
-    
+
     Args:
         grid_request_kw: Grid power request in kW (positive = drawing from grid)
         time_hours: Time duration in hours for this consumption
         datetime_obj: DateTime object to determine peak/off-peak status
-    
+
     Returns:
         Dictionary containing cost breakdown
     """
     global total_grid_cost
-    
+
     # Only calculate cost for positive grid requests (drawing from grid)
     if grid_request_kw <= 0:
         return {
@@ -138,17 +139,19 @@ def calculate_electricity_cost(grid_request_kw: float, time_hours: float, dateti
             "energy_kwh": 0.0,
             "rate_used": 0.0,
             "rate_type": "N/A - Grid Export",
-            "cumulative_cost": total_grid_cost
+            "cumulative_cost": total_grid_cost,
         }
-    
+
     # Calculate energy consumption in kWh
     energy_kwh = grid_request_kw * time_hours
-    
+
     # Determine if it's peak or off-peak time
     current_hour = datetime_obj.hour
-    is_peak = (current_hour >= current_electricity_pricing["peak_start_hour"] and 
-               current_hour < current_electricity_pricing["peak_end_hour"])
-    
+    is_peak = (
+        current_hour >= current_electricity_pricing["peak_start_hour"]
+        and current_hour < current_electricity_pricing["peak_end_hour"]
+    )
+
     # Get appropriate rate
     if is_peak:
         rate = current_electricity_pricing["peak_rate"]
@@ -156,17 +159,17 @@ def calculate_electricity_cost(grid_request_kw: float, time_hours: float, dateti
     else:
         rate = current_electricity_pricing["off_peak_rate"]
         rate_type = "Off-Peak"
-    
+
     # Calculate cost
     cost = energy_kwh * rate
     total_grid_cost += cost
-    
+
     return {
         "cost": cost,
         "energy_kwh": energy_kwh,
         "rate_used": rate,
         "rate_type": rate_type,
-        "cumulative_cost": total_grid_cost
+        "cumulative_cost": total_grid_cost,
     }
 
 
@@ -185,7 +188,7 @@ def get_cost_summary() -> dict:
         "currency": current_electricity_pricing["currency"],
         "peak_rate": current_electricity_pricing["peak_rate"],
         "off_peak_rate": current_electricity_pricing["off_peak_rate"],
-        "history_points": len(cost_history)
+        "history_points": len(cost_history),
     }
 
 
@@ -203,16 +206,11 @@ def load_pvwatts_dc_data():
                 logger.info(
                     f"Loaded {len(hourly_dc_watts)} hourly DC watts values from cached PVWatts data"
                 )
-            else:
-                logger.warning("No DC data found in PVWatts response")
-                # Generate some dummy data if no real data available
-                hourly_dc_watts = [random.uniform(5000, 15000) for _ in range(8760)]
         else:
             logger.warning("No PVWatts response file found. Will fetch new data.")
             update_pvwatts_data()
     except Exception as e:
         logger.error(f"Error loading PVWatts data: {e}")
-        hourly_dc_watts = [random.uniform(5000, 15000) for _ in range(8760)]
 
 
 def update_pvwatts_data():
@@ -292,11 +290,7 @@ def get_current_dc_watts() -> float:
         current_dc_hour_index % len(hourly_dc_watts)
     ]  # Added modulo for safety
 
-    # Add some random noise (±5% of the value)
-    noise_factor = random.uniform(0.95, 1.05)
-    dc_watts = base_dc_watts * noise_factor
-
-    return dc_watts
+    return base_dc_watts
 
 
 def initialize_simulation(force_restart=False):
@@ -343,10 +337,13 @@ def start_simulation_thread():
     with simulation_lock:
         if simulation_thread is not None and simulation_thread.is_alive():
             logger.warning("Simulation already running")
-            return False
-
-        # Reset PV update tracking when starting a new simulation
-        last_pv_update_hour = -1
+            return False        # Reset PV update tracking when starting a new simulation
+        # This will be -1 initially but preserved if restarting due to non-PV parameter changes
+        if not hasattr(current_simulation_params, '_preserve_pv_state') or not current_simulation_params._preserve_pv_state:
+            last_pv_update_hour = -1
+        else:
+            # Clear the preserve flag after using it
+            current_simulation_params._preserve_pv_state = False
 
         simulation_running = True
         simulation_thread = threading.Thread(target=run_continuous_simulation)
@@ -410,10 +407,7 @@ def run_continuous_simulation():
             if current_hour != last_pv_update_hour:
                 # Hour has changed, update PV output
                 dc_watts_current_hour_avg = get_current_dc_watts()
-                pv_output_watts_actual = dc_watts_current_hour_avg * random.uniform(
-                    0.95, 1.05
-                )
-                pv_output_kw_for_simulink = pv_output_watts_actual / 1000.0
+                pv_output_kw_for_simulink = dc_watts_current_hour_avg / 1000.0
 
                 with simulation_lock:
                     current_simulation_params.PVOutput = max(
@@ -447,19 +441,27 @@ def run_continuous_simulation():
                     )
 
                     # Calculate electricity cost for this data point
-                    grid_request_kw = results.grid_request[i] if results.grid_request else 0.0
+                    grid_request_kw = (
+                        results.grid_request[i] if results.grid_request else 0.0
+                    )
                     # Time duration: assume each point represents some fraction of the simulation step
-                    time_duration_hours = (SIMULATION_STOP_TIME_S / len(results.time_vector)) / 3600.0
-                    cost_info = calculate_electricity_cost(grid_request_kw, time_duration_hours, current_point_datetime)
-                    
+                    time_duration_hours = (
+                        SIMULATION_STOP_TIME_S / len(results.time_vector)
+                    ) / 3600.0
+                    cost_info = calculate_electricity_cost(
+                        grid_request_kw, time_duration_hours, current_point_datetime
+                    )
+
                     # Store cost history point
-                    cost_history.append({
-                        "time": abs_time_for_point,
-                        "cost": cost_info["cost"],
-                        "cumulative_cost": cost_info["cumulative_cost"],
-                        "energy_kwh": cost_info["energy_kwh"],
-                        "rate_type": cost_info["rate_type"]
-                    })
+                    cost_history.append(
+                        {
+                            "time": abs_time_for_point,
+                            "cost": cost_info["cost"],
+                            "cumulative_cost": cost_info["cumulative_cost"],
+                            "energy_kwh": cost_info["energy_kwh"],
+                            "rate_type": cost_info["rate_type"],
+                        }
+                    )
 
                     data_point = {
                         "time_abs": abs_time_for_point,
@@ -496,7 +498,7 @@ def run_continuous_simulation():
                             if results.vehicle4_battery_level
                             else None
                         ),
-                        "pv_output_watts": pv_output_watts_actual,
+                        "pv_output_watts": dc_watts_current_hour_avg,
                         "date": current_point_datetime.strftime("%Y-%m-%d"),
                         "time": current_point_datetime.strftime("%H:%M:%S"),
                         "is_grid_peak": is_grid_peak,
@@ -535,22 +537,23 @@ def run_continuous_simulation():
                             )
 
             if not simulation_running:  # Exit loop if stop was requested
-                break
-
-            # Advance simulation time for the next batch
+                break            # Advance simulation time for the next batch
             simulation_datetime += timedelta(seconds=SIMULATION_STOP_TIME_S)
             total_simulation_seconds += SIMULATION_STOP_TIME_S
 
-            hour_increments = (total_simulation_seconds // 3600) - (
-                current_dc_hour_index
-            )
-            if hour_increments > 0:
-                current_dc_hour_index = (current_dc_hour_index + hour_increments) % len(
-                    hourly_dc_watts
-                )
-                logger.info(
-                    f"Advanced to hour index {current_dc_hour_index} (Date: {simulation_datetime.strftime('%Y-%m-%d %H:%M:%S')})"
-                )
+            # Update current_dc_hour_index based on the advanced simulation_datetime
+            # This ensures consistent hour index calculation regardless of parameter changes
+            day_of_year = simulation_datetime.timetuple().tm_yday
+            hour_of_day = simulation_datetime.hour
+            calculated_idx = (day_of_year - 1) * 24 + hour_of_day
+            
+            if hourly_dc_watts:
+                new_dc_hour_index = calculated_idx % len(hourly_dc_watts)
+                if new_dc_hour_index != current_dc_hour_index:
+                    logger.info(
+                        f"Advanced to hour index {new_dc_hour_index} (Date: {simulation_datetime.strftime('%Y-%m-%d %H:%M:%S')})"
+                    )
+                current_dc_hour_index = new_dc_hour_index
 
             # Notify clients about the overall simulation time advancement (throttled)
             # This event now confirms the batch completion and overall state.
@@ -585,7 +588,7 @@ def run_continuous_simulation():
                         ),
                         "total_seconds": total_simulation_seconds,
                         "hour_index": next_dc_hour_index_for_payload,  # Use the newly calculated one
-                        "pv_output_watts": pv_output_watts_actual,
+                        "pv_output_watts": dc_watts_current_hour_avg,
                         "pv_output_kw_simulink": pv_output_kw_for_simulink,
                         "date": next_sim_datetime_for_payload.strftime("%Y-%m-%d"),
                         "time": next_sim_datetime_for_payload.strftime("%H:%M:%S"),
@@ -881,14 +884,19 @@ def simulation_control():
 
                         # Update globals
                         simulation_datetime = user_start_datetime
-                        total_simulation_seconds = 0  # Reset for the new logical start
-                        last_pv_update_hour = (
-                            -1
-                        )  # Reset PV update tracking for new simulation
-                        
+                        total_simulation_seconds = 0  # Reset for the new logical start                        # Reset PV update tracking only if starting with a new date/time
+                        # If this is a parameter update restart, preserve PV state
+                        if not hasattr(current_simulation_params, '_preserve_pv_state') or not current_simulation_params._preserve_pv_state:
+                            last_pv_update_hour = -1
+                        else:
+                            logger.info("Preserving PV state during parameter update restart")
+                            current_simulation_params._preserve_pv_state = False
+
                         # Reset electricity cost tracking for new simulation
                         reset_cost_tracking()
-                        logger.info("Reset electricity cost tracking for new simulation")
+                        logger.info(
+                            "Reset electricity cost tracking for new simulation"
+                        )
 
                         # Reset the user-set flag for battery_soc when starting a new simulation
                         # This allows simulation to update battery SOC based on simulation results
@@ -920,16 +928,22 @@ def simulation_control():
                             f"Simulation starting from user-defined datetime: {simulation_datetime.strftime('%Y-%m-%d %H:%M:%S')}, initial hour index: {current_dc_hour_index}"
                         )
 
-                    except ValueError as e:
-                        logger.warning(
+                    except ValueError as e:                        logger.warning(
                             f"Could not parse user-defined start_date ('{start_date_str}') or start_time ('{start_time_str}'): {e}. Using current/default simulation time: {simulation_datetime.strftime('%Y-%m-%d %H:%M:%S')}"
                         )
                 else:
-                    # Reset PV update tracking even when no custom time is provided
-                    last_pv_update_hour = -1
+                    # Reset PV update tracking only if this is a true new simulation start
+                    # Not when restarting due to parameter changes
+                    if not hasattr(current_simulation_params, '_preserve_pv_state') or not current_simulation_params._preserve_pv_state:
+                        last_pv_update_hour = -1
+                    else:
+                        logger.info("Preserving PV state during parameter update restart (no custom time)")
+                        current_simulation_params._preserve_pv_state = False
                     # Reset electricity cost tracking for new simulation
                     reset_cost_tracking()
-                    logger.info("Reset electricity cost tracking for new simulation (no custom time)")
+                    logger.info(
+                        "Reset electricity cost tracking for new simulation (no custom time)"
+                    )
                     logger.info(
                         f"No user-defined start time provided. Simulation will start/resume from: {simulation_datetime.strftime('%Y-%m-%d %H:%M:%S')}"
                     )
@@ -995,80 +1009,121 @@ def get_simulation_state():
 def handle_electricity_pricing():
     """Handle electricity pricing configuration."""
     global current_electricity_pricing
-    
+
     if request.method == "GET":
         # Return current pricing configuration
-        return jsonify({
-            "success": True,
-            "pricing": current_electricity_pricing
-        })
-    
+        return jsonify({"success": True, "pricing": current_electricity_pricing})
+
     elif request.method == "POST":
         try:
             data = request.get_json()
             if not data:
-                return jsonify({
-                    "success": False,
-                    "message": "No data provided"
-                }), 400
-            
+                return jsonify({"success": False, "message": "No data provided"}), 400
+
             # Validate required fields
-            required_fields = ["peak_rate", "off_peak_rate", "currency", "peak_start_hour", "peak_end_hour"]
+            required_fields = [
+                "peak_rate",
+                "off_peak_rate",
+                "currency",
+                "peak_start_hour",
+                "peak_end_hour",
+            ]
             for field in required_fields:
                 if field not in data:
-                    return jsonify({
-                        "success": False,
-                        "message": f"Missing required field: {field}"
-                    }), 400
-            
+                    return (
+                        jsonify(
+                            {
+                                "success": False,
+                                "message": f"Missing required field: {field}",
+                            }
+                        ),
+                        400,
+                    )
+
             # Validate data types and ranges
             if not isinstance(data["peak_rate"], (int, float)) or data["peak_rate"] < 0:
-                return jsonify({
-                    "success": False,
-                    "message": "Peak rate must be a positive number"
-                }), 400
-            
-            if not isinstance(data["off_peak_rate"], (int, float)) or data["off_peak_rate"] < 0:
-                return jsonify({
-                    "success": False,
-                    "message": "Off-peak rate must be a positive number"
-                }), 400
-            
-            if not isinstance(data["peak_start_hour"], int) or not (0 <= data["peak_start_hour"] <= 23):
-                return jsonify({
-                    "success": False,
-                    "message": "Peak start hour must be an integer between 0 and 23"
-                }), 400
-            
-            if not isinstance(data["peak_end_hour"], int) or not (0 <= data["peak_end_hour"] <= 23):
-                return jsonify({
-                    "success": False,
-                    "message": "Peak end hour must be an integer between 0 and 23"
-                }), 400
-            
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "message": "Peak rate must be a positive number",
+                        }
+                    ),
+                    400,
+                )
+
+            if (
+                not isinstance(data["off_peak_rate"], (int, float))
+                or data["off_peak_rate"] < 0
+            ):
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "message": "Off-peak rate must be a positive number",
+                        }
+                    ),
+                    400,
+                )
+
+            if not isinstance(data["peak_start_hour"], int) or not (
+                0 <= data["peak_start_hour"] <= 23
+            ):
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "message": "Peak start hour must be an integer between 0 and 23",
+                        }
+                    ),
+                    400,
+                )
+
+            if not isinstance(data["peak_end_hour"], int) or not (
+                0 <= data["peak_end_hour"] <= 23
+            ):
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "message": "Peak end hour must be an integer between 0 and 23",
+                        }
+                    ),
+                    400,
+                )
+
             # Update pricing configuration
-            current_electricity_pricing.update({
-                "peak_rate": float(data["peak_rate"]),
-                "off_peak_rate": float(data["off_peak_rate"]),
-                "currency": str(data["currency"]),
-                "peak_start_hour": int(data["peak_start_hour"]),
-                "peak_end_hour": int(data["peak_end_hour"])
-            })
-            
+            current_electricity_pricing.update(
+                {
+                    "peak_rate": float(data["peak_rate"]),
+                    "off_peak_rate": float(data["off_peak_rate"]),
+                    "currency": str(data["currency"]),
+                    "peak_start_hour": int(data["peak_start_hour"]),
+                    "peak_end_hour": int(data["peak_end_hour"]),
+                }
+            )
+
             logger.info(f"Electricity pricing updated: {current_electricity_pricing}")
-            
-            return jsonify({
-                "success": True,
-                "message": "Electricity pricing updated successfully",
-                "pricing": current_electricity_pricing
-            })
-        
+
+            return jsonify(
+                {
+                    "success": True,
+                    "message": "Electricity pricing updated successfully",
+                    "pricing": current_electricity_pricing,
+                }
+            )
+
         except Exception as e:
             logger.error(f"Error updating electricity pricing: {e}", exc_info=True)
-            return jsonify({
-                "success": False,
-                "message": f"Error updating electricity pricing: {str(e)}"
-            }), 500
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "message": f"Error updating electricity pricing: {str(e)}",
+                    }
+                ),
+                500,
+            )
 
 
 @app.route("/api/electricity/cost-summary", methods=["GET"])
@@ -1076,16 +1131,15 @@ def get_cost_summary_api():
     """Get current electricity cost summary."""
     try:
         cost_summary = get_cost_summary()
-        return jsonify({
-            "success": True,
-            "cost_summary": cost_summary
-        })
+        return jsonify({"success": True, "cost_summary": cost_summary})
     except Exception as e:
         logger.error(f"Error getting cost summary: {e}", exc_info=True)
-        return jsonify({
-            "success": False,
-            "message": f"Error getting cost summary: {str(e)}"
-        }), 500
+        return (
+            jsonify(
+                {"success": False, "message": f"Error getting cost summary: {str(e)}"}
+            ),
+            500,
+        )
 
 
 @app.route("/api/electricity/reset-costs", methods=["POST"])
@@ -1094,16 +1148,20 @@ def reset_electricity_costs():
     try:
         reset_cost_tracking()
         logger.info("Electricity cost tracking reset")
-        return jsonify({
-            "success": True,
-            "message": "Electricity cost tracking reset successfully"
-        })
+        return jsonify(
+            {"success": True, "message": "Electricity cost tracking reset successfully"}
+        )
     except Exception as e:
         logger.error(f"Error resetting cost tracking: {e}", exc_info=True)
-        return jsonify({
-            "success": False,
-            "message": f"Error resetting cost tracking: {str(e)}"
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": f"Error resetting cost tracking: {str(e)}",
+                }
+            ),
+            500,
+        )
 
 
 def emit_current_simulation_state():
@@ -1177,6 +1235,33 @@ def handle_update_params(data):
 
     try:
         with simulation_lock:
+            # Track if any PV-related parameters are being changed
+            pv_params_changed = False
+            datetime_changed = "initial_start_date" in data or "initial_start_time" in data
+            
+            # List of PV-related parameters that should trigger PV state reset
+            pv_related_params = {"PVOutput"}
+            
+            # Check if any PV parameters are being updated
+            for key in data.keys():
+                if key in pv_related_params:
+                    pv_params_changed = True
+                    logger.info(f"PV parameter '{key}' is being changed, will reset PV state")
+                    break
+            
+            # If only non-PV parameters are changing and no datetime change, preserve PV state
+            if not pv_params_changed and not datetime_changed:
+                current_simulation_params._preserve_pv_state = True
+                logger.info("Only non-PV parameters changed, preserving PV state during restart")
+            else:
+                # Clear any existing preserve flag
+                if hasattr(current_simulation_params, '_preserve_pv_state'):
+                    current_simulation_params._preserve_pv_state = False
+                if pv_params_changed:
+                    logger.info("PV parameters changed, PV state will be reset")
+                if datetime_changed:
+                    logger.info("Date/time changed, PV state will be reset")
+
             # Update parameters
             for key, value in data.items():
                 if key == "initial_start_date" or key == "initial_start_time":
