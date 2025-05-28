@@ -1264,91 +1264,133 @@ function updateEVBayVisualization(bayId, batteryLevel, occupied, chargingRate) {
 }
 
 /**
- * Update energy flow animations with enhanced power level effects
+ * Update energy flow animations using SVG lines.
  */
 function updateEnergyFlows(index) {
-    const pvOutput = chartData.pvOutput[index] || 0;
-    const batteryRecharge = chartData.batteryRecharge[index] || 0;
-    const evRecharge = chartData.evRecharge[index] || 0;
-    const gridRequest = chartData.gridRequest[index] || 0;
-    
-    // Solar flows
-    const solarToBattery = document.getElementById('flow-solar-battery');
-    const solarToGrid = document.getElementById('flow-solar-grid');
-    const solarToEvs = document.getElementById('flow-solar-evs');
-    
-    // Battery flows
-    const batteryToEvs = document.getElementById('flow-battery-evs');
-    const batteryToGrid = document.getElementById('flow-battery-grid');
-    
-    // Grid flows
-    const gridToEvs = document.getElementById('flow-grid-evs');
-    
-    // Clear all active flows and power classes first
-    [solarToBattery, solarToGrid, solarToEvs, batteryToEvs, batteryToGrid, gridToEvs].forEach(flow => {
-        if (flow) {
-            flow.classList.remove('active', 'low-power', 'medium-power', 'high-power', 'ultra-power', 'burst-effect');
+    const pvOutput = chartData.pvOutput[index] || 0; // Watts
+    const batteryRecharge = chartData.batteryRecharge[index] || 0; // kW (positive for charging, negative for discharging)
+    const evRecharge = chartData.evRecharge[index] || 0; // kW
+    const gridRequest = chartData.gridRequest[index] || 0; // kW (positive for import, negative for export)
+
+    // Get SVG line elements
+    const solarToBatteryLine = document.getElementById('svg-flow-solar-battery');
+    const solarToGridLine = document.getElementById('svg-flow-solar-grid');
+    const solarToEvsLine = document.getElementById('svg-flow-solar-evs');
+    const batteryToEvsLine = document.getElementById('svg-flow-battery-evs');
+    const batteryToGridLine = document.getElementById('svg-flow-battery-grid');
+    const gridToEvsLine = document.getElementById('svg-flow-grid-evs');
+    const gridToBatteryLine = document.getElementById('svg-flow-grid-battery'); // New line
+
+    const allLines = [solarToBatteryLine, solarToGridLine, solarToEvsLine, batteryToEvsLine, batteryToGridLine, gridToEvsLine, gridToBatteryLine]; // Add new line
+
+    // Reset all lines
+    allLines.forEach(line => {
+        if (line) {
+            line.style.visibility = 'hidden';
+            line.classList.remove('flow-active-animation');
         }
     });
-    
-    // Helper function to set flow intensity based on power level
-    function setFlowIntensity(flowElement, powerKW) {
-        if (!flowElement) return;
-        
-        flowElement.classList.add('active');
-        
-        // Convert to kW if needed and determine power level
-        const power = Math.abs(powerKW);
-        
-        if (power > 150) {
-            flowElement.classList.add('ultra-power', 'burst-effect');
-            flowElement.setAttribute('data-flow-rate', `${power.toFixed(1)}kW`);
-        } else if (power > 100) {
-            flowElement.classList.add('high-power', 'burst-effect');
-            flowElement.setAttribute('data-flow-rate', `${power.toFixed(1)}kW`);
-        } else if (power > 20) {
-            flowElement.classList.add('medium-power');
-            flowElement.setAttribute('data-flow-rate', `${power.toFixed(1)}kW`);
-        } else if (power > 5) {
-            flowElement.classList.add('low-power');
-            flowElement.setAttribute('data-flow-rate', `${power.toFixed(1)}kW`);
+
+    // Helper function to set SVG flow properties
+    function setSVGFlowProperties(lineElement, powerValue, flowTypeClass) {
+        if (!lineElement || powerValue <= 0) {
+            if (lineElement) lineElement.style.visibility = 'hidden';
+            return;
         }
+        lineElement.style.visibility = 'visible';
+        lineElement.setAttribute('class', `svg-energy-flow ${flowTypeClass} flow-active-animation`); // Add base class and type class
         
-        // Dispatch custom event for real-time monitoring
-        const event = new CustomEvent('energyFlowUpdate', {
-            detail: { element: flowElement, power: power, type: 'flow' }
-        });
-        document.dispatchEvent(event);
+        // Adjust stroke-width based on power (example logic)
+        let strokeWidth = 2 + Math.log10(Math.abs(powerValue) + 1) * 2; // Scale stroke width
+        strokeWidth = Math.min(Math.max(strokeWidth, 2), 8); // Clamp between 2 and 8
+        lineElement.style.strokeWidth = `${strokeWidth}px`;
     }
-    
-    // Activate flows based on data with enhanced power level effects
+
+    // Determine active flows and their properties
+    // Note: Power values for setSVGFlowProperties should be positive for intensity calculation
+
+    // Solar PV is generating
     if (pvOutput > 0) {
-        if (batteryRecharge > 0 && solarToBattery) {
-            setFlowIntensity(solarToBattery, batteryRecharge);
+        const pvOutputKW = pvOutput / 1000;
+
+        // Solar to Battery (if battery is charging)
+        if (batteryRecharge > 0) {
+            setSVGFlowProperties(solarToBatteryLine, Math.min(pvOutputKW, batteryRecharge), 'flow-solar');
+        }
+
+        // Solar to EVs (if EVs are charging and solar can supply it)
+        // This logic is simplified; a real system would have more complex power distribution.
+        if (evRecharge > 0) {
+            // Assume solar contributes some portion to EV charging if available
+            setSVGFlowProperties(solarToEvsLine, Math.min(pvOutputKW, evRecharge), 'flow-solar');
         }
         
-        if (evRecharge > 0 && pvOutput >= evRecharge && solarToEvs) {
-            setFlowIntensity(solarToEvs, evRecharge);
+        // Solar to Grid (if exporting, gridRequest is negative)
+        if (gridRequest < 0) {
+            setSVGFlowProperties(solarToGridLine, Math.abs(gridRequest), 'flow-solar');
         }
-        
-        if (gridRequest < 0 && solarToGrid) { // Excess solar to grid
-            setFlowIntensity(solarToGrid, Math.abs(gridRequest));
+    }
+
+    // Battery is discharging (batteryRecharge is negative)
+    if (batteryRecharge < 0) {
+        const batteryDischargeKW = Math.abs(batteryRecharge);
+        // Battery to EVs
+        if (evRecharge > 0) {
+            setSVGFlowProperties(batteryToEvsLine, Math.min(batteryDischargeKW, evRecharge), 'flow-battery');
+        }
+        // Battery to Grid (if exporting and battery is the source)
+        // This might overlap with solar to grid; more sophisticated logic needed for precise source attribution.
+        // For simplicity, if battery is discharging and grid is exporting, show battery to grid.
+        if (gridRequest < 0) {
+             // Only show if solar isn't already covering the export
+            if (!(pvOutput > 0 && Math.abs(gridRequest) <= pvOutput/1000)) {
+                 setSVGFlowProperties(batteryToGridLine, Math.min(batteryDischargeKW, Math.abs(gridRequest)), 'flow-battery');
+            }
         }
     }
     
-    if (batteryRecharge < 0) { // Battery discharging
-        if (evRecharge > 0 && batteryToEvs) {
-            setFlowIntensity(batteryToEvs, evRecharge);
+    // Grid is supplying power (gridRequest is positive)
+    if (gridRequest > 0) {
+        // Grid to EVs (if EVs are charging and grid is supplying)
+        if (evRecharge > 0) {
+            setSVGFlowProperties(gridToEvsLine, Math.min(gridRequest, evRecharge), 'flow-grid');
         }
-        
-        if (gridRequest > 0 && batteryToGrid) {
-            setFlowIntensity(batteryToGrid, Math.abs(batteryRecharge));
+        // Grid to Battery (if battery is charging from grid)
+        if (batteryRecharge > 0) {
+            const pvOutputKW = pvOutput / 1000; // Ensure pvOutputKW is defined here too
+            // Calculate power needed by battery that solar doesn't cover
+            const chargeFromSolarToBattery = Math.min(pvOutputKW, batteryRecharge);
+            const remainingChargeNeededByBattery = batteryRecharge - chargeFromSolarToBattery;
+            
+            if (remainingChargeNeededByBattery > 0) {
+                // Power from grid to battery is the minimum of what's still needed and what grid is supplying overall
+                const powerFromGridToBattery = Math.min(remainingChargeNeededByBattery, gridRequest);
+                if (powerFromGridToBattery > 0) {
+                    setSVGFlowProperties(gridToBatteryLine, powerFromGridToBattery, 'flow-grid');
+                }
+            }
         }
     }
-    
-    if (gridRequest > 0 && gridToEvs) { // Grid supplying power
-        setFlowIntensity(gridToEvs, gridRequest);
+}
+
+/**
+ * Helper function to get the center coordinates of a component relative to the SVG layer.
+ * @param {string} selector - The CSS selector for the component.
+ * @param {DOMRect} svgRect - The boundingClientRect of the SVG layer.
+ * @returns {{x: number, y: number}} - The center coordinates.
+ */
+function getComponentCenter(selector, svgRect) {
+    const component = document.querySelector(selector);
+    if (component) {
+        const rect = component.getBoundingClientRect();
+        return {
+            x: rect.left + rect.width / 2 - svgRect.left,
+            y: rect.top + rect.height / 2 - svgRect.top
+        };
     }
+    console.error(`Component with selector ${selector} not found for centering.`);
+    // Return a default point or handle error as appropriate
+    return { x: 0, y: 0 }; 
 }
 
 /**
@@ -1360,11 +1402,48 @@ function initialize2DVisualization() {
     components.forEach(component => {
         component.classList.remove('active', 'warning', 'error');
     });
+
+    const svgLayer = document.getElementById('energy-flow-svg-layer');
+    if (!svgLayer) {
+        console.error("SVG layer for energy flows not found!");
+        return;
+    }
+    svgLayer.innerHTML = ''; // Clear previous lines if any
+    const svgRect = svgLayer.getBoundingClientRect();
+
+    // Define flow paths using component selectors
+    const flowPaths = [
+        { id: 'svg-flow-solar-battery', fromSelector: '#solar-component', toSelector: '#battery-component', type: 'flow-solar' },
+        { id: 'svg-flow-solar-grid', fromSelector: '#solar-component', toSelector: '#grid-component', type: 'flow-solar' },
+        { id: 'svg-flow-solar-evs', fromSelector: '#solar-component', toSelector: '.charging-bays-container', type: 'flow-solar' },
+        
+        { id: 'svg-flow-battery-evs', fromSelector: '#battery-component', toSelector: '.charging-bays-container', type: 'flow-battery' },
+        { id: 'svg-flow-battery-grid', fromSelector: '#battery-component', toSelector: '#grid-component', type: 'flow-battery' },
+        
+        { id: 'svg-flow-grid-evs', fromSelector: '#grid-component', toSelector: '.charging-bays-container', type: 'flow-grid' },
+        { id: 'svg-flow-grid-battery', fromSelector: '#grid-component', toSelector: '#battery-component', type: 'flow-grid' } // New path
+    ];
+
+    flowPaths.forEach(path => {
+        const fromPoint = getComponentCenter(path.fromSelector, svgRect);
+        const toPoint = getComponentCenter(path.toSelector, svgRect);
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('id', path.id);
+        line.setAttribute('x1', fromPoint.x);
+        line.setAttribute('y1', fromPoint.y);
+        line.setAttribute('x2', toPoint.x);
+        line.setAttribute('y2', toPoint.y);
+        line.setAttribute('class', `svg-energy-flow ${path.type}`); // Add base class and type class
+        line.style.strokeWidth = '4px'; // Default stroke width
+        line.style.visibility = 'hidden'; // Initially hidden
+        svgLayer.appendChild(line);
+    });
     
-    // Initialize all values to zero
-    update2DVisualization();
+    // Initialize all values to zero or default
+    update2DVisualization(); // This will call updateEnergyFlows which now uses SVG
     
-    console.log('2D System Visualization initialized');
+    console.log('2D System Visualization initialized with SVG flows (center-to-center).');
 }
 
 // Update EV charging summary information

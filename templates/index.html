@@ -397,9 +397,7 @@
                                             <div class="power-output" id="solar-output">0.00 W</div>
                                             <div class="status-indicator" id="solar-status">Generating</div>
                                         </div>
-                                        <div class="energy-flow solar-to-battery" id="flow-solar-battery"></div>
-                                        <div class="energy-flow solar-to-grid" id="flow-solar-grid"></div>
-                                        <div class="energy-flow solar-to-evs" id="flow-solar-evs"></div>
+                                        <!-- Removed div-based energy flows for solar -->
                                     </div>
 
                                     <!-- Battery Management System -->
@@ -411,14 +409,13 @@
                                         <div class="component-body">
                                             <div class="battery-level">
                                                 <div class="battery-shell">
-                                                    <div class="battery-fill" id="battery-fill"></div>
-                                                    <div class="battery-percentage" id="battery-percentage">0%</div>
+                                                    <div id="battery-fill" class="battery-fill"></div>
+                                                    <span id="battery-percentage" class="battery-percentage">0%</span>
                                                 </div>
                                             </div>
                                             <div class="power-flow" id="battery-power">0.00 kW</div>
                                         </div>
-                                        <div class="energy-flow battery-to-evs" id="flow-battery-evs"></div>
-                                        <div class="energy-flow battery-to-grid" id="flow-battery-grid"></div>
+                                        <!-- Removed div-based energy flows for battery -->
                                     </div>
 
                                     <!-- Grid Connection -->
@@ -433,7 +430,7 @@
                                                 <div class="grid-power" id="grid-power">0.00 kW</div>
                                             </div>
                                         </div>
-                                        <div class="energy-flow grid-to-evs" id="flow-grid-evs"></div>
+                                        <!-- Removed div-based energy flow for grid -->
                                     </div>
 
                                     <!-- EV Charging Bays -->
@@ -445,8 +442,8 @@
                                             </div>
                                             <div class="bay-body">
                                                 <div class="ev-battery">
-                                                    <div class="ev-battery-fill" id="ev1-battery-fill"></div>
-                                                    <div class="ev-battery-text" id="ev1-battery-text">0%</div>
+                                                    <div id="ev1-battery-fill" class="ev-battery-fill"></div>
+                                                    <span id="ev1-battery-text" class="ev-battery-text">0%</span>
                                                 </div>
                                                 <div class="charging-rate" id="ev1-charging-rate">0.00 kW</div>
                                                 <div class="bay-status" id="ev1-status">Empty</div>
@@ -460,8 +457,8 @@
                                             </div>
                                             <div class="bay-body">
                                                 <div class="ev-battery">
-                                                    <div class="ev-battery-fill" id="ev2-battery-fill"></div>
-                                                    <div class="ev-battery-text" id="ev2-battery-text">0%</div>
+                                                    <div id="ev2-battery-fill" class="ev-battery-fill"></div>
+                                                    <span id="ev2-battery-text" class="ev-battery-text">0%</span>
                                                 </div>
                                                 <div class="charging-rate" id="ev2-charging-rate">0.00 kW</div>
                                                 <div class="bay-status" id="ev2-status">Empty</div>
@@ -475,8 +472,8 @@
                                             </div>
                                             <div class="bay-body">
                                                 <div class="ev-battery">
-                                                    <div class="ev-battery-fill" id="ev3-battery-fill"></div>
-                                                    <div class="ev-battery-text" id="ev3-battery-text">0%</div>
+                                                    <div id="ev3-battery-fill" class="ev-battery-fill"></div>
+                                                    <span id="ev3-battery-text" class="ev-battery-text">0%</span>
                                                 </div>
                                                 <div class="charging-rate" id="ev3-charging-rate">0.00 kW</div>
                                                 <div class="bay-status" id="ev3-status">Empty</div>
@@ -490,13 +487,16 @@
                                             </div>
                                             <div class="bay-body">
                                                 <div class="ev-battery">
-                                                    <div class="ev-battery-fill" id="ev4-battery-fill"></div>
-                                                    <div class="ev-battery-text" id="ev4-battery-text">0%</div>
+                                                    <div id="ev4-battery-fill" class="ev-battery-fill"></div>
+                                                    <span id="ev4-battery-text" class="ev-battery-text">0%</span>
                                                 </div>
                                                 <div class="charging-rate" id="ev4-charging-rate">0.00 kW</div>
                                                 <div class="bay-status" id="ev4-status">Empty</div>
-                                            </div>                                        </div>
+                                            </div>
+                                        </div>
                                     </div>
+                                    <!-- SVG Layer for Energy Flows -->
+                                    <svg id="energy-flow-svg-layer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none;"></svg>
                                 </div>
                             </div>
                         </div>
