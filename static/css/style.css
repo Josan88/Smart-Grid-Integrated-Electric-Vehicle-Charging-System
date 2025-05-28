@@ -487,6 +487,60 @@ body {
     color: #721c24;
 }
 
+/* Speed selector styling */
+.speed-indicator {
+    min-height: 20px;
+}
+
+.speed-display {
+    font-weight: 600;
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.speed-display.speed-slow {
+    background-color: rgba(255, 193, 7, 0.2);
+    color: #ffc107 !important;
+}
+
+.speed-display.speed-normal {
+    background-color: rgba(40, 167, 69, 0.2);
+    color: #28a745 !important;
+}
+
+.speed-display.speed-fast {
+    background-color: rgba(220, 53, 69, 0.2);
+    color: #dc3545 !important;
+}
+
+/* Enhanced speed selector dropdown */
+#simulation-speed-select {
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    transition: all 0.3s ease;
+}
+
+#simulation-speed-select:focus {
+    border-color: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25);
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+#simulation-speed-select option {
+    background-color: #495057;
+    color: white;
+}
+
+/* Speed selector label */
+.form-label {
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
 /* Energy Flow Animations */
 /* REMOVE ALL .energy-flow, .energy-flow::before, .energy-flow::after rules */
 /* For example, remove:

@@ -10,6 +10,7 @@ let simulationLog;
 let clearLogBtn;
 let pvwattsForm;
 let simulationSpeedSelect;
+let currentSpeedDisplay; // Add this new element
 let simStartMonthSelect; // Updated for month selection
 let simStartDaySelect;   // Updated for day selection
 let simStartHourSelect;  // Updated for hour selection
@@ -59,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {    // Assign DOM elements 
     clearLogBtn = document.getElementById('clear-log');
     pvwattsForm = document.getElementById('pvwatts-form');
     simulationSpeedSelect = document.getElementById('simulation-speed-select');
+    currentSpeedDisplay = document.getElementById('current-speed-display');
     simStartMonthSelect = document.getElementById('sim-start-month');
     simStartDaySelect = document.getElementById('sim-start-day');
     simStartHourSelect = document.getElementById('sim-start-hour');
@@ -155,7 +157,16 @@ socket.on('simulation_state', (data) => {
     if (data.pvwatts) {
         updatePVWattsFormValues(data.pvwatts);
     }
-      // Update simulation time display
+    
+    // Update speed display if available
+    if (data.speed) {
+        if (simulationSpeedSelect) {
+            simulationSpeedSelect.value = data.speed.toString();
+        }
+        updateSpeedDisplay(data.speed);
+    }
+    
+    // Update simulation time display
     if (data.date && data.time) {
         const dateDisplay = document.getElementById('simulation-date');
         if (dateDisplay) {
@@ -230,6 +241,7 @@ socket.on('simulation_speed_updated', (data) => {
         logMessage(data.message, 'success');
         if (simulationSpeedSelect && data.speed) {
             simulationSpeedSelect.value = data.speed.toString();
+            updateSpeedDisplay(data.speed);
         }
     } else {
         logMessage(data.message, 'error');
@@ -316,9 +328,14 @@ function setupEventListeners() {
     if (simulationSpeedSelect) {
         simulationSpeedSelect.addEventListener('change', (event) => {
             const speed = parseFloat(event.target.value);
+            updateSpeedDisplay(speed); // Update display immediately
             socket.emit('set_simulation_speed', { speed: speed });
-            logMessage(`Simulation speed set to ${speed}x`, 'info');
+            logMessage(`Setting simulation speed to ${speed}x...`, 'info');
         });
+        
+        // Initialize speed display on page load
+        const initialSpeed = parseFloat(simulationSpeedSelect.value);
+        updateSpeedDisplay(initialSpeed);
     }
 }
 
@@ -1564,4 +1581,22 @@ function updateWeatherStatus(data) {
     
     weatherStatusElement.textContent = weatherStatus;
     weatherStatusElement.className = statusClass;
+}
+
+// Add new function to update speed display
+function updateSpeedDisplay(speed) {
+    if (currentSpeedDisplay) {
+        const speedText = `Current: ${speed}x`;
+        currentSpeedDisplay.textContent = speedText;
+        
+        // Add visual feedback with color coding
+        currentSpeedDisplay.className = 'text-white speed-display';
+        if (speed < 1.0) {
+            currentSpeedDisplay.classList.add('speed-slow');
+        } else if (speed > 1.0) {
+            currentSpeedDisplay.classList.add('speed-fast');
+        } else {
+            currentSpeedDisplay.classList.add('speed-normal');
+        }
+    }
 }

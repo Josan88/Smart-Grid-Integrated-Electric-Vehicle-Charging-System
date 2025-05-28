@@ -32,6 +32,7 @@
                     </div>
                 </div>
                 <div class="me-2">
+                    <label for="simulation-speed-select" class="form-label text-white mb-1" style="font-size: 0.8rem;">Simulation Speed</label>
                     <select id="simulation-speed-select" class="form-select form-select-sm"
                         aria-label="Simulation Speed">
                         <option value="0.25">0.25x Speed</option>
@@ -41,6 +42,9 @@
                         <option value="4.0">4x Speed</option>
                         <option value="10.0">10x Speed</option>
                     </select>
+                    <div class="speed-indicator text-center mt-1">
+                        <small class="text-white" id="current-speed-display">Current: 1.0x</small>
+                    </div>
                 </div> <button id="start-simulation-btn" class="btn btn-success me-2">Start Simulation</button>
                 <button id="stop-simulation-btn" class="btn btn-danger me-2" disabled>Stop Simulation</button>
                 <button id="export-data-btn" class="btn btn-info me-2">Export Data</button>

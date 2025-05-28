@@ -743,14 +743,31 @@ def throttled_emit(event, data=None):
 # Socket.IO Event Handlers (for events from client)
 @socketio.on("connect")
 def handle_connect():
-    logger.info("Client connected")
-    # Send current state (including speed) to newly connected client
-    emit_current_simulation_state()
+    """Handle client connection."""
+    logger.info(f"Client connected: {request.sid}")
+
+    # Send current simulation state to the new client
+    with simulation_lock:
+        socketio.emit(
+            "simulation_state",
+            {
+                "running": simulation_running,
+                "params": current_simulation_params.__dict__,
+                "pvwatts": current_pvwatts_settings,
+                "datetime": simulation_datetime.strftime("%Y-%m-%d %H:%M:%S"),
+                "total_seconds": total_simulation_seconds,
+                "date": simulation_datetime.strftime("%Y-%m-%d"),
+                "time": simulation_datetime.strftime("%H:%M:%S"),
+                "speed": current_simulation_speed_multiplier,  # Include current speed
+            },
+            to=request.sid,
+        )
 
 
 @socketio.on("disconnect")
 def handle_disconnect():
-    logger.info("Client disconnected")
+    """Handle client disconnection."""
+    logger.info(f"Client disconnected: {request.sid}")
 
 
 @socketio.on("set_simulation_speed")
@@ -1248,6 +1265,7 @@ def handle_connect():
                 "total_seconds": total_simulation_seconds,
                 "date": simulation_datetime.strftime("%Y-%m-%d"),
                 "time": simulation_datetime.strftime("%H:%M:%S"),
+                "speed": current_simulation_speed_multiplier,  # Include current speed
             },
             to=request.sid,
         )
