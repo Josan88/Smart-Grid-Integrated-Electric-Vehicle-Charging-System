@@ -522,8 +522,7 @@ def run_continuous_simulation():
                 if results.batt_values and len(results.batt_values) > 0:
                     final_soc_from_batch = results.batt_values[-1]
                     with simulation_lock:
-                        # We store the latest SOC value for simulation continuity,
-                        # but we don't overwrite user-set values during parameter updates
+                        # We store the latest SOC value for simulation continuity,                        # but we don't overwrite user-set values during parameter updates
                         # This allows the user's SOC setting to take effect when applying changes
                         if (
                             not hasattr(
@@ -534,7 +533,39 @@ def run_continuous_simulation():
                             current_simulation_params.battery_soc = final_soc_from_batch
                             logger.info(
                                 f"Updated current_simulation_params.battery_soc to {final_soc_from_batch:.2f}% for next batch/simulation."
-                            )
+                            )                # Update bay battery percentages - always update from simulation results for continuity
+                # Bay batteries should reflect charging progress from one simulation batch to the next
+                if results.vehicle1_battery_level and len(results.vehicle1_battery_level) > 0:
+                    final_bay1_from_batch = results.vehicle1_battery_level[-1]
+                    with simulation_lock:
+                        current_simulation_params.bay1_percentage = final_bay1_from_batch
+                        logger.info(
+                            f"Updated bay1_percentage to {final_bay1_from_batch:.2f}% from simulation results for next batch."
+                        )
+                
+                if results.vehicle2_battery_level and len(results.vehicle2_battery_level) > 0:
+                    final_bay2_from_batch = results.vehicle2_battery_level[-1]
+                    with simulation_lock:
+                        current_simulation_params.bay2_percentage = final_bay2_from_batch
+                        logger.info(
+                            f"Updated bay2_percentage to {final_bay2_from_batch:.2f}% from simulation results for next batch."
+                        )
+                
+                if results.vehicle3_battery_level and len(results.vehicle3_battery_level) > 0:
+                    final_bay3_from_batch = results.vehicle3_battery_level[-1]
+                    with simulation_lock:
+                        current_simulation_params.bay3_percentage = final_bay3_from_batch
+                        logger.info(
+                            f"Updated bay3_percentage to {final_bay3_from_batch:.2f}% from simulation results for next batch."
+                        )
+                
+                if results.vehicle4_battery_level and len(results.vehicle4_battery_level) > 0:
+                    final_bay4_from_batch = results.vehicle4_battery_level[-1]
+                    with simulation_lock:
+                        current_simulation_params.bay4_percentage = final_bay4_from_batch
+                        logger.info(
+                            f"Updated bay4_percentage to {final_bay4_from_batch:.2f}% from simulation results for next batch."
+                        )
 
             if not simulation_running:  # Exit loop if stop was requested
                 break            # Advance simulation time for the next batch
@@ -1270,9 +1301,7 @@ def handle_update_params(data):
                     continue
                 elif hasattr(current_simulation_params, key):
                     # Convert value to float for numeric parameters
-                    setattr(current_simulation_params, key, float(value))
-
-                    # Mark battery_soc as user-set so it doesn't get overwritten by simulation
+                    setattr(current_simulation_params, key, float(value))                    # Mark battery_soc as user-set so it doesn't get overwritten by simulation
                     if key == "battery_soc":
                         setattr(
                             current_simulation_params, "_user_set_battery_soc", True
@@ -1280,6 +1309,11 @@ def handle_update_params(data):
                         logger.info(
                             f"User manually set battery_soc to {float(value):.2f}%"
                         )
+                    
+                    # Bay percentages are always updated from simulation results
+                    # No user-set flags needed as they represent charging progress
+                    if key in ["bay1_percentage", "bay2_percentage", "bay3_percentage", "bay4_percentage"]:
+                        logger.info(f"User set {key} to {float(value):.2f}% (will be updated by simulation)")
 
         # For date parameters, store them separately for the next simulation start
         if "initial_start_date" in data and "initial_start_time" in data:
