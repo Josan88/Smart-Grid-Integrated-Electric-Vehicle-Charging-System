@@ -361,7 +361,7 @@ body {
 .grid-system {
     /* bottom: 20px; */ /* Original position */
     /* right: 50px; */ /* Original position */
-    bottom: 210px; /* New position: above charging bays, moved further up */
+    bottom: 300px; /* New position: above charging bays, moved further up */
     left: 50%; /* Center horizontally */
     transform: translateX(-50%); /* Adjust for centering */
     width: 180px;
