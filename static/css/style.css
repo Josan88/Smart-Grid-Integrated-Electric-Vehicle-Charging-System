@@ -219,25 +219,6 @@ body {
     font-weight: 600;
 }
 
-/* Enhanced card styling for dashboard metrics */
-.dashboard-metric {
-    text-align: center;
-    padding: 0.5rem;
-}
-
-.dashboard-metric .metric-value {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: #495057;
-}
-
-.dashboard-metric .metric-label {
-    font-size: 0.8rem;
-    color: #6c757d;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
 /* ===== 2D SYSTEM VISUALIZATION STYLES ===== */
 
 .system-viz-container {
