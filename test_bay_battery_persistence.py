@@ -226,8 +226,25 @@ def run_all_tests():
 
 if __name__ == "__main__":
     # Wait a moment to ensure the application is fully started
-    test_logger.info("Waiting for application to be ready...")
     time.sleep(2)
     
-    success = run_all_tests()
-    sys.exit(0 if success else 1)
+    try:
+        success = run_all_tests()
+        if success:
+            print("\n" + "="*60)
+            print("🎉 BAY BATTERY PERSISTENCE TESTS COMPLETED SUCCESSFULLY!")
+            print("✅ All persistence functionality is working correctly")
+            print("✅ User-set bay percentages are preserved from simulation updates")
+            print("✅ Implementation follows battery SOC persistence pattern")
+            print("="*60)
+        else:
+            print("\n" + "="*60)
+            print("❌ BAY BATTERY PERSISTENCE TESTS FAILED!")
+            print("Please check the implementation and logs above")
+            print("="*60)
+            exit(1)
+    except KeyboardInterrupt:
+        test_logger.info("Tests interrupted by user")
+    except Exception as e:
+        test_logger.error(f"Test execution failed: {e}")
+        exit(1)

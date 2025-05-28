@@ -67,6 +67,9 @@ document.addEventListener('DOMContentLoaded', () => {    // Assign DOM elements 
 
     paramInputs = document.querySelectorAll('.param-input');
     rangeValueDisplays = {
+        'bay1_percentage': document.getElementById('bay1_percentage_value'),
+        'bay2_percentage': document.getElementById('bay2_percentage_value'),
+        'bay3_percentage': document.getElementById('bay3_percentage_value'),
         'bay4_percentage': document.getElementById('bay4_percentage_value'),
         'battery_soc': document.getElementById('battery_soc_value')
     };    // Check if essential elements were found

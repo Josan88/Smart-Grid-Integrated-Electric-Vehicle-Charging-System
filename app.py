@@ -538,34 +538,70 @@ def run_continuous_simulation():
                 if results.vehicle1_battery_level and len(results.vehicle1_battery_level) > 0:
                     final_bay1_from_batch = results.vehicle1_battery_level[-1]
                     with simulation_lock:
-                        current_simulation_params.bay1_percentage = final_bay1_from_batch
-                        logger.info(
-                            f"Updated bay1_percentage to {final_bay1_from_batch:.2f}% from simulation results for next batch."
-                        )
+                        # Apply persistence logic like battery SOC
+                        if (
+                            not hasattr(current_simulation_params, "_user_set_bay1_percentage")
+                            or not current_simulation_params._user_set_bay1_percentage
+                        ):
+                            current_simulation_params.bay1_percentage = final_bay1_from_batch
+                            logger.info(
+                                f"Updated bay1_percentage to {final_bay1_from_batch:.2f}% from simulation results for next batch."
+                            )
+                        else:
+                            logger.info(
+                                f"Bay1 percentage preserved - user-set flag prevented update from {final_bay1_from_batch:.2f}%"
+                            )
                 
                 if results.vehicle2_battery_level and len(results.vehicle2_battery_level) > 0:
                     final_bay2_from_batch = results.vehicle2_battery_level[-1]
                     with simulation_lock:
-                        current_simulation_params.bay2_percentage = final_bay2_from_batch
-                        logger.info(
-                            f"Updated bay2_percentage to {final_bay2_from_batch:.2f}% from simulation results for next batch."
-                        )
+                        # Apply persistence logic like battery SOC
+                        if (
+                            not hasattr(current_simulation_params, "_user_set_bay2_percentage")
+                            or not current_simulation_params._user_set_bay2_percentage
+                        ):
+                            current_simulation_params.bay2_percentage = final_bay2_from_batch
+                            logger.info(
+                                f"Updated bay2_percentage to {final_bay2_from_batch:.2f}% from simulation results for next batch."
+                            )
+                        else:
+                            logger.info(
+                                f"Bay2 percentage preserved - user-set flag prevented update from {final_bay2_from_batch:.2f}%"
+                            )
                 
                 if results.vehicle3_battery_level and len(results.vehicle3_battery_level) > 0:
                     final_bay3_from_batch = results.vehicle3_battery_level[-1]
                     with simulation_lock:
-                        current_simulation_params.bay3_percentage = final_bay3_from_batch
-                        logger.info(
-                            f"Updated bay3_percentage to {final_bay3_from_batch:.2f}% from simulation results for next batch."
-                        )
+                        # Apply persistence logic like battery SOC
+                        if (
+                            not hasattr(current_simulation_params, "_user_set_bay3_percentage")
+                            or not current_simulation_params._user_set_bay3_percentage
+                        ):
+                            current_simulation_params.bay3_percentage = final_bay3_from_batch
+                            logger.info(
+                                f"Updated bay3_percentage to {final_bay3_from_batch:.2f}% from simulation results for next batch."
+                            )
+                        else:
+                            logger.info(
+                                f"Bay3 percentage preserved - user-set flag prevented update from {final_bay3_from_batch:.2f}%"
+                            )
                 
                 if results.vehicle4_battery_level and len(results.vehicle4_battery_level) > 0:
                     final_bay4_from_batch = results.vehicle4_battery_level[-1]
                     with simulation_lock:
-                        current_simulation_params.bay4_percentage = final_bay4_from_batch
-                        logger.info(
-                            f"Updated bay4_percentage to {final_bay4_from_batch:.2f}% from simulation results for next batch."
-                        )
+                        # Apply persistence logic like battery SOC
+                        if (
+                            not hasattr(current_simulation_params, "_user_set_bay4_percentage")
+                            or not current_simulation_params._user_set_bay4_percentage
+                        ):
+                            current_simulation_params.bay4_percentage = final_bay4_from_batch
+                            logger.info(
+                                f"Updated bay4_percentage to {final_bay4_from_batch:.2f}% from simulation results for next batch."
+                            )
+                        else:
+                            logger.info(
+                                f"Bay4 percentage preserved - user-set flag prevented update from {final_bay4_from_batch:.2f}%"
+                            )
 
             if not simulation_running:  # Exit loop if stop was requested
                 break            # Advance simulation time for the next batch
@@ -958,6 +994,14 @@ def simulation_control():
                                 "Reset user-set battery SOC flag for new simulation"
                             )
 
+                        # Reset the user-set flags for bay percentages when starting a new simulation
+                        # This allows simulation to update bay percentages based on simulation results
+                        for bay_attr in ['_user_set_bay1_percentage', '_user_set_bay2_percentage', 
+                                       '_user_set_bay3_percentage', '_user_set_bay4_percentage']:
+                            if hasattr(current_simulation_params, bay_attr):
+                                setattr(current_simulation_params, bay_attr, False)
+                                logger.info(f"Reset {bay_attr} flag for new simulation")
+
                         day_of_year = simulation_datetime.timetuple().tm_yday
                         hour_of_day = simulation_datetime.hour
                         calculated_idx = (day_of_year - 1) * 24 + hour_of_day
@@ -1328,10 +1372,19 @@ def handle_update_params(data):
                             f"User manually set battery_soc to {float(value):.2f}%"
                         )
                     
-                    # Bay percentages are always updated from simulation results
-                    # No user-set flags needed as they represent charging progress
-                    if key in ["bay1_percentage", "bay2_percentage", "bay3_percentage", "bay4_percentage"]:
-                        logger.info(f"User set {key} to {float(value):.2f}% (will be updated by simulation)")
+                    # Mark bay percentages as user-set so they don't get overwritten by simulation
+                    if key == "bay1_percentage":
+                        setattr(current_simulation_params, "_user_set_bay1_percentage", True)
+                        logger.info(f"User manually set bay1_percentage to {float(value):.2f}%")
+                    elif key == "bay2_percentage":
+                        setattr(current_simulation_params, "_user_set_bay2_percentage", True)
+                        logger.info(f"User manually set bay2_percentage to {float(value):.2f}%")
+                    elif key == "bay3_percentage":
+                        setattr(current_simulation_params, "_user_set_bay3_percentage", True)
+                        logger.info(f"User manually set bay3_percentage to {float(value):.2f}%")
+                    elif key == "bay4_percentage":
+                        setattr(current_simulation_params, "_user_set_bay4_percentage", True)
+                        logger.info(f"User manually set bay4_percentage to {float(value):.2f}%")
 
         # For date parameters, store them separately for the next simulation start
         if "initial_start_date" in data and "initial_start_time" in data:
