@@ -1613,11 +1613,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--host", type=str, default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)"
     )
-    args = parser.parse_args()
-
-    # Use eventlet if available and patched, otherwise fall back to Flask's default dev server (Werkzeug)
+    args = parser.parse_args()    # Use eventlet if available and patched, otherwise fall back to Flask's default dev server (Werkzeug)
     if HAS_EVENTLET:
-        socketio.run(app, debug=True, host=args.host, port=args.port)
+        socketio.run(app, debug=True, host=args.host, port=args.port, use_reloader=False)
     else:
         logger.warning(
             "Eventlet not available. Running with Flask's default development server (Werkzeug)."
@@ -1626,5 +1624,5 @@ if __name__ == "__main__":
             "For production or better WebSocket performance, consider installing eventlet or gevent."
         )
         socketio.run(
-            app, debug=True, host=args.host, port=args.port
+            app, debug=True, host=args.host, port=args.port, use_reloader=False
         )  # Werkzeug might not be ideal for socketio production
