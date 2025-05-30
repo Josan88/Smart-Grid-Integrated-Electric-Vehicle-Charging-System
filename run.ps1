@@ -1,4 +1,4 @@
-param([switch]$SkipInstall, [switch]$QuickStart, [string]$Port = "5000", [switch]$Help, [switch]$UseVenv, [string]$VenvName = ".venv")
+param([switch]$SkipInstall, [switch]$QuickStart, [string]$Port = "5000", [switch]$Help, [switch]$NoVenv, [string]$VenvName = ".venv")
 
 function Write-Success { param($Message) Write-Host $Message -ForegroundColor Green }
 function Write-Warning { param($Message) Write-Host $Message -ForegroundColor Yellow }
@@ -11,7 +11,7 @@ if ($Help) {
     Write-Host "-SkipInstall    Skip Python package installation"
     Write-Host "-QuickStart     Skip dependency checks and start immediately"
     Write-Host "-Port <number>  Specify port number (default: 5000)"
-    Write-Host "-UseVenv        Create and use a Python virtual environment"
+    Write-Host "-NoVenv         Skip creating/using a Python virtual environment (venv used by default)"
     Write-Host "-VenvName       Name of virtual environment directory (default: .venv)"
     Write-Host "-Help           Show this help message"
     exit 0
@@ -60,10 +60,9 @@ function Test-PythonVersion {
             if ($major -eq 3 -and $minor -ge 9) {
                 Write-Success "Python $pythonVersion detected"
                 
-                # Check for Python 3.12+ and eventlet compatibility
+                # Check for Python 3.12+
                 if ($major -eq 3 -and $minor -ge 12) {
-                    Write-Warning "Python 3.12+ detected. Will ensure eventlet compatibility."
-                    $script:needsEventletFix = $true
+                    Write-Warning "Python 3.12+ detected."
                 }
                 
                 return $true
@@ -167,8 +166,8 @@ if (-not (Test-PortAvailable $requestedPort)) {
 }
 
 if (Test-PythonVersion) {
-    # Handle virtual environment setup
-    if ($UseVenv) {
+    # Handle virtual environment setup (enabled by default unless -NoVenv is specified)
+    if (-not $NoVenv) {
         if (-not (Create-VirtualEnvironment $VenvName)) {
             Write-Error "Failed to create virtual environment"
             exit 1
@@ -182,16 +181,11 @@ if (Test-PythonVersion) {
     
     if (-not $SkipInstall) {
         Write-Info "Installing dependencies..."
-        if ($UseVenv) {
+        if (-not $NoVenv) {
             Write-Info "Installing packages in virtual environment: $VenvName"
         }
         python -m pip install --upgrade pip
-        
-        # Handle eventlet compatibility for Python 3.12+
-        if ($script:needsEventletFix) {
-            Write-Info "Fixing eventlet compatibility for Python 3.12+..."
-            python -m pip install "eventlet>=0.36.1"
-        }
+    
         
         python -m pip install -r requirements.txt
     }
