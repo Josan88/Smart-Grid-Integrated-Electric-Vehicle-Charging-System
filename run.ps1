@@ -8,8 +8,14 @@ function Write-Info { param($Message) Write-Host $Message -ForegroundColor Cyan 
 if ($Help) {
     Write-Host "Smart Grid-Integrated EV Charging System Setup Script"
     Write-Host "Usage: .\setup_and_run.ps1 [OPTIONS]"
+    Write-Host ""
+    Write-Host "Requirements:"
+    Write-Host "  - Python 3.9+ (automatically checked)"
+    Write-Host "  - MATLAB 2024b (automatically checked)"
+    Write-Host ""
+    Write-Host "Options:"
     Write-Host "-SkipInstall    Skip Python package installation"
-    Write-Host "-QuickStart     Skip dependency checks and start immediately"
+    Write-Host "-QuickStart     Skip dependency checks (Python & MATLAB) and start immediately"
     Write-Host "-Port <number>  Specify port number (default: 5000)"
     Write-Host "-NoVenv         Skip creating/using a Python virtual environment (venv used by default)"
     Write-Host "-VenvName       Name of virtual environment directory (default: .venv)"
@@ -74,6 +80,72 @@ function Test-PythonVersion {
         }
     } catch {
         Write-Error "Python not found in PATH"; return $false
+    }
+}
+
+function Test-MatlabVersion {
+    try {
+        # Check if MATLAB is available in PATH
+        if (-not (Test-Command "matlab")) {
+            Write-Error "MATLAB not found in PATH"
+            return $false
+        }
+        
+        Write-Info "Checking MATLAB installation..."
+        
+        # Get MATLAB version using batch mode
+        $matlabVersionOutput = matlab -batch "version" 2>&1 | Out-String
+        
+        # Look for version pattern in the output
+        if ($matlabVersionOutput -match "(\d+\.\d+\.\d+\.\d+)\s+\(R(\d{4})([ab])\)") {
+            $version = $matches[1]
+            $year = [int]$matches[2]
+            $release = $matches[3]
+            $fullRelease = "$year$release"
+            
+            Write-Info "Found MATLAB R$fullRelease (Version $version)"
+            
+            # Check if it's exactly 2024b
+            if ($year -eq 2024 -and $release -eq "b") {
+                Write-Success "MATLAB R$fullRelease (Version $version) meets requirements"
+                
+                # Quick functionality test
+                $testOutput = matlab -batch "disp('MATLAB working'); exit" 2>&1 | Out-String
+                if ($testOutput -like "*MATLAB working*") {
+                    Write-Success "MATLAB functionality verified"
+                    return $true
+                } else {
+                    Write-Warning "MATLAB may not be functioning properly, but continuing..."
+                    return $true  # Continue anyway
+                }
+            } else {
+                Write-Error "MATLAB 2024b required, found R$fullRelease"
+                Write-Info "Please install MATLAB 2024b to ensure compatibility with the EV Charging System"
+                return $false
+            }
+        } else {
+            # Try alternative pattern matching
+            if ($matlabVersionOutput -match "R(\d{4})([ab])") {
+                $year = [int]$matches[1]
+                $release = $matches[2]
+                $fullRelease = "$year$release"
+                
+                if ($year -eq 2024 -and $release -eq "b") {
+                    Write-Success "MATLAB R$fullRelease detected and meets requirements"
+                    return $true
+                } else {
+                    Write-Error "MATLAB 2024b required, found R$fullRelease"
+                    return $false
+                }
+            } else {
+                Write-Warning "Could not parse MATLAB version from output, but MATLAB appears to be installed"
+                Write-Info "Raw output: $matlabVersionOutput"
+                return $true  # Continue anyway if we can't parse but MATLAB exists
+            }
+        }
+    } catch {
+        Write-Error "Error checking MATLAB: $_"
+        return $false
     }
 }
 
@@ -163,6 +235,15 @@ if (-not (Test-PortAvailable $requestedPort)) {
     }
 } else {
     Write-Success "Port $requestedPort is available"
+}
+
+# Check MATLAB version
+if (-not $QuickStart) {
+    if (-not (Test-MatlabVersion)) {
+        Write-Error "MATLAB 2024b check failed. The Smart Grid EV Charging System requires MATLAB 2024b for Simulink models."
+        Write-Info "You can use -QuickStart to skip this check if MATLAB is not required for your current task."
+        exit 1
+    }
 }
 
 if (Test-PythonVersion) {
