@@ -337,9 +337,12 @@ def start_simulation_thread():
     with simulation_lock:
         if simulation_thread is not None and simulation_thread.is_alive():
             logger.warning("Simulation already running")
-            return False        # Reset PV update tracking when starting a new simulation
+            return False  # Reset PV update tracking when starting a new simulation
         # This will be -1 initially but preserved if restarting due to non-PV parameter changes
-        if not hasattr(current_simulation_params, '_preserve_pv_state') or not current_simulation_params._preserve_pv_state:
+        if (
+            not hasattr(current_simulation_params, "_preserve_pv_state")
+            or not current_simulation_params._preserve_pv_state
+        ):
             last_pv_update_hour = -1
         else:
             # Clear the preserve flag after using it
@@ -533,17 +536,24 @@ def run_continuous_simulation():
                             current_simulation_params.battery_soc = final_soc_from_batch
                             logger.info(
                                 f"Updated current_simulation_params.battery_soc to {final_soc_from_batch:.2f}% for next batch/simulation."
-                            )                # Update bay battery percentages - always update from simulation results for continuity
+                            )  # Update bay battery percentages - always update from simulation results for continuity
                 # Bay batteries should reflect charging progress from one simulation batch to the next
-                if results.vehicle1_battery_level and len(results.vehicle1_battery_level) > 0:
+                if (
+                    results.vehicle1_battery_level
+                    and len(results.vehicle1_battery_level) > 0
+                ):
                     final_bay1_from_batch = results.vehicle1_battery_level[-1]
                     with simulation_lock:
                         # Apply persistence logic like battery SOC
                         if (
-                            not hasattr(current_simulation_params, "_user_set_bay1_percentage")
+                            not hasattr(
+                                current_simulation_params, "_user_set_bay1_percentage"
+                            )
                             or not current_simulation_params._user_set_bay1_percentage
                         ):
-                            current_simulation_params.bay1_percentage = final_bay1_from_batch
+                            current_simulation_params.bay1_percentage = (
+                                final_bay1_from_batch
+                            )
                             logger.info(
                                 f"Updated bay1_percentage to {final_bay1_from_batch:.2f}% from simulation results for next batch."
                             )
@@ -551,16 +561,23 @@ def run_continuous_simulation():
                             logger.info(
                                 f"Bay1 percentage preserved - user-set flag prevented update from {final_bay1_from_batch:.2f}%"
                             )
-                
-                if results.vehicle2_battery_level and len(results.vehicle2_battery_level) > 0:
+
+                if (
+                    results.vehicle2_battery_level
+                    and len(results.vehicle2_battery_level) > 0
+                ):
                     final_bay2_from_batch = results.vehicle2_battery_level[-1]
                     with simulation_lock:
                         # Apply persistence logic like battery SOC
                         if (
-                            not hasattr(current_simulation_params, "_user_set_bay2_percentage")
+                            not hasattr(
+                                current_simulation_params, "_user_set_bay2_percentage"
+                            )
                             or not current_simulation_params._user_set_bay2_percentage
                         ):
-                            current_simulation_params.bay2_percentage = final_bay2_from_batch
+                            current_simulation_params.bay2_percentage = (
+                                final_bay2_from_batch
+                            )
                             logger.info(
                                 f"Updated bay2_percentage to {final_bay2_from_batch:.2f}% from simulation results for next batch."
                             )
@@ -568,16 +585,23 @@ def run_continuous_simulation():
                             logger.info(
                                 f"Bay2 percentage preserved - user-set flag prevented update from {final_bay2_from_batch:.2f}%"
                             )
-                
-                if results.vehicle3_battery_level and len(results.vehicle3_battery_level) > 0:
+
+                if (
+                    results.vehicle3_battery_level
+                    and len(results.vehicle3_battery_level) > 0
+                ):
                     final_bay3_from_batch = results.vehicle3_battery_level[-1]
                     with simulation_lock:
                         # Apply persistence logic like battery SOC
                         if (
-                            not hasattr(current_simulation_params, "_user_set_bay3_percentage")
+                            not hasattr(
+                                current_simulation_params, "_user_set_bay3_percentage"
+                            )
                             or not current_simulation_params._user_set_bay3_percentage
                         ):
-                            current_simulation_params.bay3_percentage = final_bay3_from_batch
+                            current_simulation_params.bay3_percentage = (
+                                final_bay3_from_batch
+                            )
                             logger.info(
                                 f"Updated bay3_percentage to {final_bay3_from_batch:.2f}% from simulation results for next batch."
                             )
@@ -585,16 +609,23 @@ def run_continuous_simulation():
                             logger.info(
                                 f"Bay3 percentage preserved - user-set flag prevented update from {final_bay3_from_batch:.2f}%"
                             )
-                
-                if results.vehicle4_battery_level and len(results.vehicle4_battery_level) > 0:
+
+                if (
+                    results.vehicle4_battery_level
+                    and len(results.vehicle4_battery_level) > 0
+                ):
                     final_bay4_from_batch = results.vehicle4_battery_level[-1]
                     with simulation_lock:
                         # Apply persistence logic like battery SOC
                         if (
-                            not hasattr(current_simulation_params, "_user_set_bay4_percentage")
+                            not hasattr(
+                                current_simulation_params, "_user_set_bay4_percentage"
+                            )
                             or not current_simulation_params._user_set_bay4_percentage
                         ):
-                            current_simulation_params.bay4_percentage = final_bay4_from_batch
+                            current_simulation_params.bay4_percentage = (
+                                final_bay4_from_batch
+                            )
                             logger.info(
                                 f"Updated bay4_percentage to {final_bay4_from_batch:.2f}% from simulation results for next batch."
                             )
@@ -604,7 +635,7 @@ def run_continuous_simulation():
                             )
 
             if not simulation_running:  # Exit loop if stop was requested
-                break            # Advance simulation time for the next batch
+                break  # Advance simulation time for the next batch
             simulation_datetime += timedelta(seconds=SIMULATION_STOP_TIME_S)
             total_simulation_seconds += SIMULATION_STOP_TIME_S
 
@@ -613,7 +644,7 @@ def run_continuous_simulation():
             day_of_year = simulation_datetime.timetuple().tm_yday
             hour_of_day = simulation_datetime.hour
             calculated_idx = (day_of_year - 1) * 24 + hour_of_day
-            
+
             if hourly_dc_watts:
                 new_dc_hour_index = calculated_idx % len(hourly_dc_watts)
                 if new_dc_hour_index != current_dc_hour_index:
@@ -970,10 +1001,15 @@ def simulation_control():
                         simulation_datetime = user_start_datetime
                         total_simulation_seconds = 0  # Reset for the new logical start                        # Reset PV update tracking only if starting with a new date/time
                         # If this is a parameter update restart, preserve PV state
-                        if not hasattr(current_simulation_params, '_preserve_pv_state') or not current_simulation_params._preserve_pv_state:
+                        if (
+                            not hasattr(current_simulation_params, "_preserve_pv_state")
+                            or not current_simulation_params._preserve_pv_state
+                        ):
                             last_pv_update_hour = -1
                         else:
-                            logger.info("Preserving PV state during parameter update restart")
+                            logger.info(
+                                "Preserving PV state during parameter update restart"
+                            )
                             current_simulation_params._preserve_pv_state = False
 
                         # Reset electricity cost tracking for new simulation
@@ -996,8 +1032,12 @@ def simulation_control():
 
                         # Reset the user-set flags for bay percentages when starting a new simulation
                         # This allows simulation to update bay percentages based on simulation results
-                        for bay_attr in ['_user_set_bay1_percentage', '_user_set_bay2_percentage', 
-                                       '_user_set_bay3_percentage', '_user_set_bay4_percentage']:
+                        for bay_attr in [
+                            "_user_set_bay1_percentage",
+                            "_user_set_bay2_percentage",
+                            "_user_set_bay3_percentage",
+                            "_user_set_bay4_percentage",
+                        ]:
                             if hasattr(current_simulation_params, bay_attr):
                                 setattr(current_simulation_params, bay_attr, False)
                                 logger.info(f"Reset {bay_attr} flag for new simulation")
@@ -1020,16 +1060,22 @@ def simulation_control():
                             f"Simulation starting from user-defined datetime: {simulation_datetime.strftime('%Y-%m-%d %H:%M:%S')}, initial hour index: {current_dc_hour_index}"
                         )
 
-                    except ValueError as e:                        logger.warning(
+                    except ValueError as e:
+                        logger.warning(
                             f"Could not parse user-defined start_date ('{start_date_str}') or start_time ('{start_time_str}'): {e}. Using current/default simulation time: {simulation_datetime.strftime('%Y-%m-%d %H:%M:%S')}"
                         )
                 else:
                     # Reset PV update tracking only if this is a true new simulation start
                     # Not when restarting due to parameter changes
-                    if not hasattr(current_simulation_params, '_preserve_pv_state') or not current_simulation_params._preserve_pv_state:
+                    if (
+                        not hasattr(current_simulation_params, "_preserve_pv_state")
+                        or not current_simulation_params._preserve_pv_state
+                    ):
                         last_pv_update_hour = -1
                     else:
-                        logger.info("Preserving PV state during parameter update restart (no custom time)")
+                        logger.info(
+                            "Preserving PV state during parameter update restart (no custom time)"
+                        )
                         current_simulation_params._preserve_pv_state = False
                     # Reset electricity cost tracking for new simulation
                     reset_cost_tracking()
@@ -1330,25 +1376,31 @@ def handle_update_params(data):
         with simulation_lock:
             # Track if any PV-related parameters are being changed
             pv_params_changed = False
-            datetime_changed = "initial_start_date" in data or "initial_start_time" in data
-            
+            datetime_changed = (
+                "initial_start_date" in data or "initial_start_time" in data
+            )
+
             # List of PV-related parameters that should trigger PV state reset
             pv_related_params = {"PVOutput"}
-            
+
             # Check if any PV parameters are being updated
             for key in data.keys():
                 if key in pv_related_params:
                     pv_params_changed = True
-                    logger.info(f"PV parameter '{key}' is being changed, will reset PV state")
+                    logger.info(
+                        f"PV parameter '{key}' is being changed, will reset PV state"
+                    )
                     break
-            
+
             # If only non-PV parameters are changing and no datetime change, preserve PV state
             if not pv_params_changed and not datetime_changed:
                 current_simulation_params._preserve_pv_state = True
-                logger.info("Only non-PV parameters changed, preserving PV state during restart")
+                logger.info(
+                    "Only non-PV parameters changed, preserving PV state during restart"
+                )
             else:
                 # Clear any existing preserve flag
-                if hasattr(current_simulation_params, '_preserve_pv_state'):
+                if hasattr(current_simulation_params, "_preserve_pv_state"):
                     current_simulation_params._preserve_pv_state = False
                 if pv_params_changed:
                     logger.info("PV parameters changed, PV state will be reset")
@@ -1363,7 +1415,9 @@ def handle_update_params(data):
                     continue
                 elif hasattr(current_simulation_params, key):
                     # Convert value to float for numeric parameters
-                    setattr(current_simulation_params, key, float(value))                    # Mark battery_soc as user-set so it doesn't get overwritten by simulation
+                    setattr(
+                        current_simulation_params, key, float(value)
+                    )  # Mark battery_soc as user-set so it doesn't get overwritten by simulation
                     if key == "battery_soc":
                         setattr(
                             current_simulation_params, "_user_set_battery_soc", True
@@ -1371,20 +1425,36 @@ def handle_update_params(data):
                         logger.info(
                             f"User manually set battery_soc to {float(value):.2f}%"
                         )
-                    
+
                     # Mark bay percentages as user-set so they don't get overwritten by simulation
                     if key == "bay1_percentage":
-                        setattr(current_simulation_params, "_user_set_bay1_percentage", True)
-                        logger.info(f"User manually set bay1_percentage to {float(value):.2f}%")
+                        setattr(
+                            current_simulation_params, "_user_set_bay1_percentage", True
+                        )
+                        logger.info(
+                            f"User manually set bay1_percentage to {float(value):.2f}%"
+                        )
                     elif key == "bay2_percentage":
-                        setattr(current_simulation_params, "_user_set_bay2_percentage", True)
-                        logger.info(f"User manually set bay2_percentage to {float(value):.2f}%")
+                        setattr(
+                            current_simulation_params, "_user_set_bay2_percentage", True
+                        )
+                        logger.info(
+                            f"User manually set bay2_percentage to {float(value):.2f}%"
+                        )
                     elif key == "bay3_percentage":
-                        setattr(current_simulation_params, "_user_set_bay3_percentage", True)
-                        logger.info(f"User manually set bay3_percentage to {float(value):.2f}%")
+                        setattr(
+                            current_simulation_params, "_user_set_bay3_percentage", True
+                        )
+                        logger.info(
+                            f"User manually set bay3_percentage to {float(value):.2f}%"
+                        )
                     elif key == "bay4_percentage":
-                        setattr(current_simulation_params, "_user_set_bay4_percentage", True)
-                        logger.info(f"User manually set bay4_percentage to {float(value):.2f}%")
+                        setattr(
+                            current_simulation_params, "_user_set_bay4_percentage", True
+                        )
+                        logger.info(
+                            f"User manually set bay4_percentage to {float(value):.2f}%"
+                        )
 
         # For date parameters, store them separately for the next simulation start
         if "initial_start_date" in data and "initial_start_time" in data:
@@ -1528,10 +1598,26 @@ else:
 # --- End Application Startup Logic ---
 
 if __name__ == "__main__":
-    logger.info("Starting Flask-SocketIO server...")
+    import argparse
+
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(
+        description="Smart Grid EV Charging System Dashboard"
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=5000,
+        help="Port to run the server on (default: 5000)",
+    )
+    parser.add_argument(
+        "--host", type=str, default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)"
+    )
+    args = parser.parse_args()
+
     # Use eventlet if available and patched, otherwise fall back to Flask's default dev server (Werkzeug)
     if HAS_EVENTLET:
-        socketio.run(app, debug=True, host="0.0.0.0", port=5000)
+        socketio.run(app, debug=True, host=args.host, port=args.port)
     else:
         logger.warning(
             "Eventlet not available. Running with Flask's default development server (Werkzeug)."
@@ -1540,5 +1626,5 @@ if __name__ == "__main__":
             "For production or better WebSocket performance, consider installing eventlet or gevent."
         )
         socketio.run(
-            app, debug=True, host="0.0.0.0", port=5000
+            app, debug=True, host=args.host, port=args.port
         )  # Werkzeug might not be ideal for socketio production
