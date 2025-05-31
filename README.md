@@ -478,7 +478,6 @@ GET /api/simulation/state
 python -m venv .venv-dev
 .venv-dev\Scripts\activate
 pip install -r requirements.txt
-pip install pytest black flake8  # Development tools
 
 # Run in development mode
 python app.py --debug
