@@ -633,6 +633,47 @@ def run_continuous_simulation():
                             logger.info(
                                 f"Bay4 percentage preserved - user-set flag prevented update from {final_bay4_from_batch:.2f}%"
                             )
+                
+                # Auto-unoccupy fully charged bays
+                for i in range(1, 5):  # Bays 1 to 4
+                    bay_occupied_attr = f"bay{i}_occupied"
+                    bay_percentage_attr = f"bay{i}_percentage"
+                    vehicle_battery_level_attr = f"vehicle{i}_battery_level" # Used to get latest from results
+                    user_set_occupied_flag = f"_user_set_bay{i}_occupied"
+                    user_set_percentage_flag = f"_user_set_bay{i}_percentage"
+
+                    # Check if the bay is currently marked as occupied in parameters
+                    if getattr(current_simulation_params, bay_occupied_attr, 0.0) == 1.0:
+                        # Get the final battery level for this bay from the current batch results
+                        final_bay_battery_level_from_results = None
+                        if results and hasattr(results, vehicle_battery_level_attr):
+                            bay_levels_list = getattr(results, vehicle_battery_level_attr)
+                            if bay_levels_list and len(bay_levels_list) > 0:
+                                final_bay_battery_level_from_results = bay_levels_list[-1]
+                        
+                        # If not available from results (e.g., results is None or empty list),
+                        # use the current_simulation_params value (which should have been updated just before this block)
+                        current_bay_percentage_in_params = getattr(current_simulation_params, bay_percentage_attr, 0.0)
+                        
+                        # Prioritize results, fallback to params
+                        effective_final_bay_battery_level = final_bay_battery_level_from_results \
+                            if final_bay_battery_level_from_results is not None \
+                            else current_bay_percentage_in_params
+
+                        if effective_final_bay_battery_level >= 99.9:  # Threshold for "fully charged"
+                            with simulation_lock:
+                                setattr(current_simulation_params, bay_occupied_attr, 0.0)
+                                # Reset percentage to 0 to visually clear the bay
+                                setattr(current_simulation_params, bay_percentage_attr, 0.0)
+                                
+                                # Reset user-set flags for this bay as it's now automatically managed
+                                if hasattr(current_simulation_params, user_set_occupied_flag):
+                                    setattr(current_simulation_params, user_set_occupied_flag, False)
+                                if hasattr(current_simulation_params, user_set_percentage_flag):
+                                    setattr(current_simulation_params, user_set_percentage_flag, False)
+
+                                logger.info(f"Bay {i} auto-unoccupied as EV reached {effective_final_bay_battery_level:.2f}% charge.")
+                                # Frontend will be updated by subsequent new_simulation_point or simulation_state events
 
             if not simulation_running:  # Exit loop if stop was requested
                 break  # Advance simulation time for the next batch
@@ -1415,46 +1456,70 @@ def handle_update_params(data):
                     continue
                 elif hasattr(current_simulation_params, key):
                     # Convert value to float for numeric parameters
+                    float_value = float(value)
                     setattr(
-                        current_simulation_params, key, float(value)
+                        current_simulation_params, key, float_value
                     )  # Mark battery_soc as user-set so it doesn't get overwritten by simulation
                     if key == "battery_soc":
                         setattr(
                             current_simulation_params, "_user_set_battery_soc", True
                         )
                         logger.info(
-                            f"User manually set battery_soc to {float(value):.2f}%"
+                            f"User manually set battery_soc to {float_value:.2f}%"
                         )
 
                     # Mark bay percentages as user-set so they don't get overwritten by simulation
+                    # Also mark bay_occupied as user-set if percentage is provided for an occupied bay
                     if key == "bay1_percentage":
                         setattr(
                             current_simulation_params, "_user_set_bay1_percentage", True
                         )
                         logger.info(
-                            f"User manually set bay1_percentage to {float(value):.2f}%"
+                            f"User manually set bay1_percentage to {float_value:.2f}%"
                         )
+                        if getattr(current_simulation_params, "bay1_occupied", 0.0) == 1.0:
+                             setattr(current_simulation_params, "_user_set_bay1_occupied", True)
                     elif key == "bay2_percentage":
                         setattr(
                             current_simulation_params, "_user_set_bay2_percentage", True
                         )
                         logger.info(
-                            f"User manually set bay2_percentage to {float(value):.2f}%"
+                            f"User manually set bay2_percentage to {float_value:.2f}%"
                         )
+                        if getattr(current_simulation_params, "bay2_occupied", 0.0) == 1.0:
+                             setattr(current_simulation_params, "_user_set_bay2_occupied", True)
                     elif key == "bay3_percentage":
                         setattr(
                             current_simulation_params, "_user_set_bay3_percentage", True
                         )
                         logger.info(
-                            f"User manually set bay3_percentage to {float(value):.2f}%"
+                            f"User manually set bay3_percentage to {float_value:.2f}%"
                         )
+                        if getattr(current_simulation_params, "bay3_occupied", 0.0) == 1.0:
+                             setattr(current_simulation_params, "_user_set_bay3_occupied", True)
                     elif key == "bay4_percentage":
                         setattr(
                             current_simulation_params, "_user_set_bay4_percentage", True
                         )
                         logger.info(
-                            f"User manually set bay4_percentage to {float(value):.2f}%"
+                            f"User manually set bay4_percentage to {float_value:.2f}%"
                         )
+                        if getattr(current_simulation_params, "bay4_occupied", 0.0) == 1.0:
+                             setattr(current_simulation_params, "_user_set_bay4_occupied", True)
+                    # Explicitly handle bay_occupied flags if they are part of the update
+                    elif key == "bay1_occupied":
+                        setattr(current_simulation_params, "_user_set_bay1_occupied", True)
+                        logger.info(f"User manually set bay1_occupied to {float_value}")
+                    elif key == "bay2_occupied":
+                        setattr(current_simulation_params, "_user_set_bay2_occupied", True)
+                        logger.info(f"User manually set bay2_occupied to {float_value}")
+                    elif key == "bay3_occupied":
+                        setattr(current_simulation_params, "_user_set_bay3_occupied", True)
+                        logger.info(f"User manually set bay3_occupied to {float_value}")
+                    elif key == "bay4_occupied":
+                        setattr(current_simulation_params, "_user_set_bay4_occupied", True)
+                        logger.info(f"User manually set bay4_occupied to {float_value}")
+
 
         # For date parameters, store them separately for the next simulation start
         if "initial_start_date" in data and "initial_start_time" in data:
