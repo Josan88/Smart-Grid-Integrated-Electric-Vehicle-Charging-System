@@ -2,15 +2,16 @@
 
 ## Project Overview
 
-The Smart Grid-Integrated Electric Vehicle (EV) Charging System is a comprehensive web-based simulation dashboard that models, visualizes, and manages the complexities of an EV charging infrastructure integrated with a smart grid. This system features real-time data visualization, MATLAB-Python integration, and a modern user interface designed for monitoring and analyzing the performance of renewable energy systems and EV charging infrastructure.
+The Smart Grid-Integrated Electric Vehicle (EV) Charging System is a comprehensive web-based simulation dashboard that models, visualizes, and manages the complexities of an EV charging infrastructure integrated with a smart grid. This system features real-time data visualization, MATLAB-Python integration, electricity cost tracking, and a modern user interface designed for monitoring and analyzing the performance of renewable energy systems and EV charging infrastructure.
 
 ## Key Features
 
 ### 🚗 **Dynamic Simulation Control**
 *   Start, stop, and control simulation speed (0.25x to 10x)
-*   Real-time simulation date and time display
+*   Real-time simulation date and time display with user-configurable start times
 *   Configurable simulation parameters through web interface
 *   MATLAB Simulink integration via Python Engine API
+*   Automatic simulation startup for immediate system readiness
 
 ### 📊 **Real-time Data Visualization**
 *   **2D System Visualization:** Interactive animated display showing energy flows between components
@@ -20,29 +21,42 @@ The Smart Grid-Integrated Electric Vehicle (EV) Charging System is a comprehensi
 *   **EV Charging Bays:** Individual monitoring of 4 charging bays with battery levels and charging rates
 *   **Energy Flow Animations:** 6 different animated energy flow paths between system components
 
+### 💰 **Electricity Cost Tracking & Management**
+*   **Real-time Cost Calculation:** Live electricity cost tracking based on grid usage
+*   **Peak/Off-Peak Pricing:** Configurable electricity rates with time-based pricing
+*   **Cost Analytics:** Cumulative cost tracking and detailed cost breakdown
+*   **Malaysian Ringgit (RM) Support:** Localized currency and pricing structure
+*   **Cost Export:** Detailed cost data included in CSV exports
+*   **Cost Reset Functionality:** Reset cost tracking for new simulation scenarios
+
 ### ⚙️ **Configurable System Parameters**
-*   Solar panel output settings
-*   Battery management parameters
-*   EV charging bay configurations
-*   Grid interaction settings
-*   Electricity pricing and peak time management
+*   Solar panel output settings with PVWatts integration
+*   Battery management parameters with state-of-charge tracking
+*   EV charging bay configurations with individual battery monitoring
+*   Grid interaction settings with peak/off-peak scheduling
+*   Electricity pricing configuration (peak: RM 0.229/kWh, off-peak: RM 0.139/kWh)
+*   User-defined simulation start date and time
 
 ### 🌞 **PVWatts Integration**
 *   NREL PVWatts V8 API integration for realistic solar data
 *   Cached solar generation data for improved performance
 *   Configurable solar panel specifications (capacity, tilt, azimuth, etc.)
+*   Location-based solar generation (Kuching, Sarawak coordinates)
+*   Hourly solar output with 8,760 data points (full year)
 
 ### 📈 **Data Management & Export**
-*   Real-time data logging and processing
-*   CSV export functionality for detailed analysis
+*   Real-time data logging and processing with point-by-point emission
+*   CSV export functionality for detailed analysis including cost data
 *   Comprehensive simulation event logging
 *   Data filtering and optimization for performance
+*   WebSocket throttling for optimal real-time performance
 
 ### 🖥️ **Modern Web Interface**
-*   Bootstrap-based responsive design
+*   Bootstrap-based responsive design with optimized performance
 *   Real-time updates via Socket.IO WebSocket communication
 *   Progress bars and visual indicators replacing traditional charts
-*   Mobile-friendly interface with optimized performance
+*   Mobile-friendly interface with touch-optimized controls
+*   Dark mode support and modern CSS animations
 
 ## Technologies Used
 
@@ -54,22 +68,25 @@ The Smart Grid-Integrated Electric Vehicle (EV) Charging System is a comprehensi
 *   **Responsive Design:** Mobile-first approach with modern CSS Grid and Flexbox
 
 ### **Backend**
-*   **Primary Language:** Python 3.12+
+*   **Primary Language:** Python 3.9+ (tested with 3.12.10)
 *   **Web Framework:** Flask 2.3.3 with Flask-SocketIO 5.3.6
+*   **Async Support:** EventLet for high-performance WebSocket handling
 *   **MATLAB Integration:** MATLAB Engine API for Python (matlabengine 24.2.2)
 *   **Simulation Engine:** MATLAB Simulink 2024b (CompleteV1.slx model)
 *   **External APIs:** NREL PVWatts V8 API for solar data
 
 ### **Data & Communication**
-*   **Data Exchange:** JSON for API communication
-*   **Data Export:** CSV format for analysis
+*   **Data Exchange:** JSON for API communication with optimized payloads
+*   **Data Export:** CSV format for analysis with cost tracking
 *   **Caching:** File-based caching for PVWatts data
 *   **Real-time Updates:** EventLet for asynchronous operations
+*   **Performance:** WebSocket throttling and data downsampling
 
 ### **Development Tools**
 *   **Dependencies:** Requirements.txt for Python package management
 *   **Performance:** Optimized data structures for real-time processing
 *   **Logging:** Comprehensive logging system for debugging and monitoring
+*   **Automation:** PowerShell setup script for one-command deployment
 
 ## Getting Started
 
@@ -99,7 +116,7 @@ Use the provided PowerShell script for automated setup and launch:
 The script will automatically:
 - ✅ Check Python version compatibility (3.9+)
 - ✅ Install required dependencies from `requirements.txt`
-- ✅ Start the Flask application
+- ✅ Start the Flask application with automatic simulation
 - ✅ Open your browser to the dashboard (single tab)
 
 #### Method 2: Manual Setup
@@ -129,6 +146,9 @@ The script will automatically:
         ↓                    ↓                   ↓              ↓                ↓
    CompleteV1.slx      Real-time API        Socket.IO     Bootstrap UI     SVG Animations
    Simulation Model    Data Processing      Live Updates   Progress Bars    Energy Flows
+        ↓                    ↓                   ↓              ↓                ↓
+   Cost Tracking      EventLet Async       Point-by-Point  Real-time Cost   Display
+   Peak/Off-Peak      PVWatts Cache        Data Emission   Flow Indicators  Status Colors
 ```
 
 ## Installation (Windows)
@@ -171,19 +191,19 @@ First, verify that your Python version is compatible with your MATLAB installati
 
 ```
 📁 website/
-├── 📄 app.py                    # Main Flask application with Socket.IO (1559 lines)
+├── 📄 app.py                    # Main Flask application with Socket.IO (1,800+ lines)
 ├── 📄 simulation.py             # MATLAB-Python interface and simulation management
 ├── 📄 pvwatts.py               # NREL PVWatts API integration with caching
-├── 📄 setup_and_run.ps1        # Automated PowerShell setup script (FIXED)
+├── 📄 setup_and_run.ps1        # Automated PowerShell setup script (VERIFIED)
 ├── 📄 setup_and_run.py         # Alternative Python setup script
-├── 📄 requirements.txt         # Python dependencies
+├── 📄 requirements.txt         # Python dependencies (EventLet, Flask-SocketIO, etc.)
 ├── 📄 CompleteV1.slx           # MATLAB Simulink simulation model
 ├── 📄 sim_the_model.m          # MATLAB simulation script
 ├── 📄 matlab.mat               # MATLAB workspace data
 ├── 📄 README.md                # Project documentation (this file)
 ├── 📄 SETUP_GUIDE.md           # Detailed setup instructions
 ├── 📁 templates/
-│   └── 📄 index.html           # Main dashboard interface (839 lines)
+│   └── 📄 index.html           # Main dashboard interface (responsive design)
 ├── 📁 static/
 │   ├── 📁 css/
 │   │   └── 📄 style.css        # Custom styling and animations
@@ -198,80 +218,96 @@ First, verify that your Python version is compatible with your MATLAB installati
 ```
 
 ### Key Components
-*   **`app.py`**: Main Flask application (1559 lines) handling web server, API endpoints, and WebSocket communication
-*   **`simulation.py`**: MATLAB engine interface (613+ lines) managing Simulink model execution and data processing  
-*   **`setup_and_run.ps1`**: **FIXED** PowerShell automation script with proper syntax and single browser tab opening
-*   **`templates/index.html`**: Complete dashboard interface with 2D visualization, progress indicators, and controls
+*   **`app.py`**: Main Flask application (1,800+ lines) handling web server, API endpoints, WebSocket communication, and electricity cost tracking
+*   **`simulation.py`**: MATLAB engine interface managing Simulink model execution and data processing  
+*   **`setup_and_run.ps1`**: **VERIFIED** PowerShell automation script with proper syntax and single browser tab opening
+*   **`templates/index.html`**: Complete dashboard interface with 2D visualization, progress indicators, and cost display
 *   **`static/js/script.js`**: Frontend logic including real-time data processing and 2D system visualization
 *   **`CompleteV1.slx`**: MATLAB Simulink model for smart grid and EV charging simulation
+*   **`requirements.txt`**: Updated dependencies including EventLet for performance optimization
 
 ## Recent Updates & Fixes
 
-### ✅ **PowerShell Script Fixes (Latest)**
-- **Fixed syntax errors**: Resolved "Unexpected token '}' in expression or statement" at line 269
-- **Single browser tab**: Eliminated duplicate browser opening (was opening 2 tabs)
+### ✅ **Latest Enhancements (Current Version)**
+- **Electricity Cost Tracking**: Real-time cost calculation with peak/off-peak pricing (RM 0.229/0.139 per kWh)
+- **Performance Optimization**: EventLet integration for improved WebSocket performance
+- **Automatic Simulation**: System starts simulation immediately upon startup for instant readiness
+- **Enhanced Logging**: Comprehensive cost tracking and simulation state logging
+- **User-Set Parameter Tracking**: Intelligent handling of user-modified vs simulation-updated parameters
+
+### ✅ **PowerShell Script Fixes (Verified)**
+- **Fixed syntax errors**: Resolved "Unexpected token '}' in expression or statement"
+- **Single browser tab**: Eliminated duplicate browser opening (now opens single tab)
 - **Improved error handling**: Better Python version detection and dependency management
 - **Enhanced compatibility**: Updated Python version requirement from 3.12+ to 3.9+ for broader compatibility
 - **ASCII encoding**: Ensured proper script encoding to prevent character-related issues
 
 ### ✅ **System Reliability Improvements**
 - **Automated setup**: One-command deployment with `.\setup_and_run.ps1`
-- **Dependency management**: Automatic installation of required Python packages
+- **Dependency management**: Automatic installation including EventLet for async support
 - **Port configuration**: Configurable port settings with default 5000
-- **Browser integration**: Controlled browser opening with 3-second delay for proper server startup
+- **Browser integration**: Controlled browser opening with proper server startup timing
+- **Cost tracking**: Comprehensive electricity cost monitoring and export capabilities
 
 ### ✅ **Application Features**
 - **MATLAB Integration**: Verified working with Python 3.12.10 and MATLAB Engine
-- **Real-time WebSocket**: Socket.IO communication for live data updates
-- **Multi-vehicle monitoring**: 4 EV charging bays with individual battery tracking
-- **Performance optimization**: Efficient data processing and memory management
+- **Real-time WebSocket**: Socket.IO communication with EventLet for optimal performance
+- **Multi-vehicle monitoring**: 4 EV charging bays with individual battery and cost tracking
+- **Performance optimization**: Efficient data processing, memory management, and WebSocket throttling
 
 ## How to Use
 
 ### Dashboard Interface
-1. **Start Simulation**: Click "Start Simulation" to begin real-time data generation
+1. **Automatic Start**: System automatically begins simulation upon startup
 2. **Control Speed**: Use the speed selector (0.25x to 10x) to adjust simulation pace
 3. **Monitor Systems**: View real-time status through:
    - **Battery Management**: Animated battery level with color-coded status (green/yellow/red)
    - **Solar PV Output**: Live power generation with efficiency indicators
-   - **Grid Connection**: Power request/supply with peak/off-peak status
+   - **Grid Connection**: Power request/supply with peak/off-peak status and real-time cost
    - **EV Charging Bays**: Individual battery levels and charging rates for 4 vehicles
    - **Energy Flows**: Animated flow lines showing power distribution between components
+   - **Cost Display**: Real-time electricity cost tracking with cumulative totals
 
 ### Parameter Configuration
 *   **Simulation Parameters**: Adjust battery output, PV settings, and EV charging parameters
+*   **Date/Time Settings**: Configure simulation start date and time
 *   **PVWatts Settings**: Configure solar panel specifications (latitude, longitude, tilt, azimuth)
-*   **Electricity Pricing**: Set peak/off-peak rates and time periods
+*   **Electricity Pricing**: Set peak/off-peak rates and time periods (default: RM 0.229/0.139 per kWh)
+*   **Cost Management**: Reset cost tracking and configure pricing parameters
 
 ### Data Export & Analysis
-*   **Export Data**: Click "Export Data" to download simulation results as CSV
-*   **Real-time Logging**: Monitor system events in the simulation log panel
+*   **Export Data**: Click "Export Data" to download simulation results as CSV including cost data
+*   **Cost Analysis**: View real-time cost breakdown with peak/off-peak rate calculations
+*   **Real-time Logging**: Monitor system events and cost tracking in the simulation log panel
 *   **Performance Metrics**: View efficiency and status indicators for all components
 
 ### 2D Visualization Features
-*   **Component Status**: Visual indicators show operational state of each system component
+*   **Component Status**: Visual indicators show operational state with cost information
 *   **Energy Flow Animation**: Real-time animated flows between solar panels, battery, grid, and EV charging bays
 *   **Status Color Coding**: Immediate visual feedback through color-coded status indicators
 *   **Interactive Elements**: Hover effects and responsive design for better user experience
+*   **Cost Indicators**: Real-time cost display integrated with system status
 
 ### Advanced Features
-*   **WebSocket Communication**: Real-time updates without page refresh
+*   **WebSocket Communication**: Real-time updates without page refresh using EventLet
 *   **Mobile Responsive**: Optimized interface for tablets and mobile devices
-*   **Performance Monitoring**: Built-in performance optimization with data filtering
+*   **Performance Monitoring**: Built-in performance optimization with data filtering and throttling
 *   **Error Handling**: Comprehensive error handling with user-friendly messages
+*   **Cost Tracking**: Detailed electricity cost monitoring with Malaysian Ringgit support
 
 ## Performance & Reliability
 
 ### **Data Processing**
-*   **Simulation Cycles**: 1.6-12 second batches with 49 active data points
-*   **Real-time Updates**: Live data streaming via WebSocket connections
+*   **Simulation Cycles**: Point-by-point data emission with configurable speed (0.25x to 10x)
+*   **Real-time Updates**: Live data streaming via WebSocket connections with EventLet
 *   **Data Filtering**: Optimized startup point filtering for improved performance
 *   **Memory Management**: Efficient data structures for continuous operation
+*   **Cost Calculation**: Real-time electricity cost tracking with minimal performance impact
 
 ### **System Monitoring**
-*   8 active data streams: Battery, BattRecharge, EVRecharge, GridRequest, Vehicle1-4BatteryLevel
-*   Real-time status monitoring for all system components
-*   Comprehensive logging system for debugging and analysis
+*   9 active data streams: Battery, BattRecharge, EVRecharge, GridRequest, Vehicle1-4BatteryLevel, Cost
+*   Real-time status monitoring for all system components including cost tracking
+*   Comprehensive logging system for debugging, analysis, and cost auditing
 *   Performance metrics tracking for system optimization
 
 ### **Verified Compatibility**
@@ -279,6 +315,7 @@ First, verify that your Python version is compatible with your MATLAB installati
 *   **MATLAB Versions**: 2024b (tested with MATLAB Engine API)
 *   **Operating System**: Windows 10/11 with PowerShell
 *   **Browsers**: Chrome, Firefox, Edge (WebSocket support required)
+*   **Dependencies**: EventLet, Flask-SocketIO, Requests, matlabengine
 
 ## Troubleshooting
 
@@ -293,16 +330,19 @@ First, verify that your Python version is compatible with your MATLAB installati
 - **MATLAB Engine not found**: Ensure MATLAB Engine for Python is installed correctly
 - **Version incompatibility**: Check [MATLAB Python Compatibility](https://uk.mathworks.com/support/requirements/python-compatibility.html)
 - **Import errors**: Verify virtual environment activation and dependency installation
+- **EventLet issues**: EventLet automatically installs with requirements.txt
 
 #### **Browser/Network Issues**
 - **Multiple tabs opening**: Fixed in latest PowerShell script (now opens single tab)
 - **Port conflicts**: Use `-Port` parameter to specify different port
 - **WebSocket connection failed**: Check firewall settings and browser WebSocket support
+- **Cost display issues**: Ensure JavaScript is enabled for real-time cost updates
 
 #### **Application Performance**
 - **Slow response**: Check MATLAB engine initialization and system resources
 - **Memory issues**: Monitor Python process memory usage during long simulations
 - **Data export problems**: Ensure sufficient disk space and write permissions
+- **Cost calculation errors**: Verify electricity pricing configuration and grid data
 
 ## Contributing
 
@@ -313,6 +353,7 @@ This project is part of the **ENG30002 Engineering Technology Sustainability Pro
 *   **Documentation**: Update README.md and inline comments for new features
 *   **Testing**: Test all changes with both frontend and MATLAB integration
 *   **Performance**: Consider real-time performance impact of modifications
+*   **Cost Tracking**: Ensure new features integrate properly with electricity cost tracking
 
 ## License
 
@@ -320,17 +361,23 @@ This project is developed for educational purposes as part of the Engineering Te
 
 ---
 
-**Project Status**: ✅ **FULLY OPERATIONAL & VERIFIED**  
-**Last Updated**: May 29, 2025  
-**Version**: Final Integration v1.1 (PowerShell Fixed)  
+**Project Status**: ✅ **FULLY OPERATIONAL & ENHANCED**  
+**Last Updated**: January 2025  
+**Version**: Production v2.0 (Cost Tracking + Performance Optimized)  
 **Setup Method**: `.\setup_and_run.ps1` (Recommended)  
 **Access**: http://localhost:5000  
 **Compatibility**: Python 3.9+ | MATLAB 2024b | Windows 10/11
 
 ### Recent Achievements
+- ✅ **Electricity cost tracking with real-time calculation**
+- ✅ **EventLet integration for optimal WebSocket performance**
+- ✅ **Automatic simulation startup for immediate system readiness**
 - ✅ **PowerShell automation script fully functional**
 - ✅ **Single browser tab opening (fixed duplicate issue)**
 - ✅ **MATLAB Engine integration working perfectly**
 - ✅ **Real-time WebSocket communication established**
-- ✅ **4-vehicle battery monitoring system active**
+- ✅ **4-vehicle battery monitoring with cost tracking**
 - ✅ **Zero syntax errors in all components**
+- ✅ **Malaysian Ringgit (RM) cost tracking integration**
+- ✅ **Peak/off-peak electricity pricing (8 AM - 10 PM peak hours)**
+- ✅ **Comprehensive CSV export with cost data**
