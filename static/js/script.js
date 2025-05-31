@@ -186,15 +186,8 @@ socket.on('simulation_state', (data) => {
         }
     }
 
-    // Update peak status display
-    if (data.grid_peak_status !== undefined) {
-        const gridPeakStatusEl = document.getElementById('grid-peak-status');
-        if (gridPeakStatusEl) {
-            gridPeakStatusEl.textContent = data.grid_peak_status;
-        } else {
-            console.error("DOM element #grid-peak-status not found for grid_peak_status.");
-        }
-    }
+    // Remove this redundant grid peak status update
+    // Grid peak status is now handled in updateGridComponent function
     
     logMessage('Received current simulation state', 'info');
 });
@@ -625,6 +618,9 @@ function processSimulationData(data) {
 }
 
 function processSingleDataPoint(data) {
+    // Store the last received data point globally for peak status calculation
+    window.lastReceivedDataPoint = data;
+    
     // Add data to buffers
     chartData.time.push(data.time_abs); // Use absolute time for chart labels
     chartData.batteryValues.push(data.batt_value);
@@ -655,19 +651,10 @@ function processSingleDataPoint(data) {
     updateCostDisplay(data); // Update cost information
     updateSolarPerformance(data); // Update solar performance metrics
     update2DVisualization(); // Update 2D system visualization
-
-    // Update peak status display
-    if (data.grid_peak_status !== undefined) {
-        const gridPeakStatusEl = document.getElementById('grid-peak-status');
-        if (gridPeakStatusEl) {
-            gridPeakStatusEl.textContent = data.grid_peak_status;
-        } else {
-            console.error("DOM element #grid-peak-status not found for grid_peak_status.");
-        }
-    }
-    // The time display is now handled directly in the socket.on('new_simulation_point') handler
-    // logMessage(`Processed point at time ${data.time_abs.toFixed(2)}s`, 'debug'); 
 }
+
+// Removed redundant code that's causing the error
+// The grid peak status is already handled in update2DVisualization -> updateGridComponent
 
 function trimChartData() {
     if (chartData.time.length > MAX_DATA_POINTS) {
@@ -1151,35 +1138,68 @@ function updateBatteryComponent(index) {
  * Update grid component visualization
  */
 function updateGridComponent(index) {
-    const gridRequest = chartData.gridRequest[index] || 0;
-    const gridPowerEl = document.getElementById('grid-power');
-    const peakIndicatorEl = document.getElementById('peak-indicator');
     const gridComponent = document.getElementById('grid-component');
+    const peakIndicator = document.getElementById('peak-indicator');
+    const gridPower = document.getElementById('grid-power');
     
-    if (gridPowerEl) {
-        gridPowerEl.textContent = `${gridRequest.toFixed(2)} kW`;
+    if (!gridComponent || !peakIndicator || !gridPower) {
+        console.warn('Grid component elements not found');
+        return;
     }
-    
-    // Get peak status from the display element
-    const peakStatusEl = document.getElementById('grid-peak-status');
-    const peakStatus = peakStatusEl ? peakStatusEl.textContent : 'Off-Peak';
-    
-    if (peakIndicatorEl) {
-        peakIndicatorEl.textContent = peakStatus;
-        peakIndicatorEl.style.color = peakStatus.includes('Peak') ? '#dc3545' : '#28a745';
-    }
-    
-    if (gridComponent) {
-        if (Math.abs(gridRequest) > 10) {
-            gridComponent.classList.add('warning');
-            gridComponent.classList.remove('active', 'error');
-        } else if (Math.abs(gridRequest) > 20) {
-            gridComponent.classList.add('error');
-            gridComponent.classList.remove('active', 'warning');
-        } else {
-            gridComponent.classList.add('active');
-            gridComponent.classList.remove('warning', 'error');
+
+    if (chartData.gridRequest.length > 0 && index < chartData.gridRequest.length) {
+        const gridValue = chartData.gridRequest[index] || 0;
+        
+        // Update power display - show just the power value without import/export labels
+        gridPower.textContent = `${Math.abs(gridValue).toFixed(2)} kW`;
+        
+        // Get current simulation time for peak status calculation
+        const currentTime = chartData.time[index];
+        let currentHour = 12; // Default to noon if no time data
+        
+        // Calculate hour from simulation data if available
+        if (currentTime !== undefined) {
+            // Assuming simulation starts at midnight and each point represents some time progression
+            // This is a simplified calculation - adjust based on your actual time progression
+            const simulationHours = (currentTime / 3600) % 24; // Convert seconds to hours, wrap at 24
+            currentHour = Math.floor(simulationHours);
         }
+        
+        // Alternative: Use actual datetime if available from data point
+        // This should be the preferred method if datetime is available
+        const lastDataPoint = window.lastReceivedDataPoint;
+        if (lastDataPoint && lastDataPoint.date && lastDataPoint.time) {
+            const timeStr = lastDataPoint.time;
+            const timeParts = timeStr.split(':');
+            if (timeParts.length >= 1) {
+                currentHour = parseInt(timeParts[0], 10);
+            }
+        }
+        
+        // Determine peak status (8 AM to 10 PM = peak hours)
+        const isPeakTime = currentHour >= 8 && currentHour < 22;
+        
+        // Update peak indicator
+        peakIndicator.textContent = isPeakTime ? 'Peak' : 'Off-Peak';
+        
+        // Update component styling based on peak status
+        gridComponent.className = 'component grid-system';
+        if (isPeakTime) {
+            gridComponent.classList.add('peak-time');
+            peakIndicator.className = 'peak-indicator peak-active';
+        } else {
+            gridComponent.classList.add('off-peak-time');
+            peakIndicator.className = 'peak-indicator off-peak-active';
+        }
+        
+        // Update component status based on grid usage
+        if (Math.abs(gridValue) > 20) {
+            gridComponent.classList.add('warning');
+        } else if (Math.abs(gridValue) > 0.1) {
+            gridComponent.classList.add('active');
+        }
+        
+        console.log(`Grid updated: ${Math.abs(gridValue).toFixed(2)} kW, Hour: ${currentHour}, Peak: ${isPeakTime ? 'Yes' : 'No'}`);
     }
 }
 

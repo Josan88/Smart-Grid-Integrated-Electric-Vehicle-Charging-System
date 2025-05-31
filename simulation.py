@@ -40,7 +40,7 @@ class SimulationParameters:
     bay4_percentage: float = 0.0  # percentage (0.0-100.0)
     PVOutput: float = 10.0  # kW per hour (DC)
     battery_soc: float = 0.0  # percentage (0.0-100.0)
-    GridPeak: float = 0.0  # boolean (0.0/1.0)
+    GridPeak: float = 0.0  # boolean (0.0/1.0) - Peak time indicator for grid pricing
     BatteryOutput: float = 30.0  # kW
 
     def to_dict(self) -> Dict[str, float]:

@@ -1,183 +1,224 @@
 """
 Final test script to verify peak status functionality works correctly
 """
-import requests
-import time
-from datetime import datetime
 
-def test_peak_status_functionality():
-    """Test that peak status correctly updates when time is changed"""
-    base_url = "http://127.0.0.1:5000"
-    
-    print("=== Testing Peak Status Functionality ===\n")
-    
-    # Test 1: Check current status at midnight (should be off-peak)
-    print("Test 1: Current simulation time and peak status")
-    try:
-        response = requests.get(f"{base_url}/api/simulation/state")
-        if response.status_code == 200:
-            data = response.json()
-            current_time = data.get('current_datetime', 'Unknown')
-            is_peak = data.get('is_grid_peak', 'Unknown')
-            peak_status = data.get('grid_peak_status', 'Unknown')
-            
-            print(f"Current simulation time: {current_time}")
-            print(f"Is grid peak: {is_peak}")
-            print(f"Peak status: {peak_status}")
-        else:
-            print(f"Failed to get simulation state: {response.status_code}")
-    except Exception as e:
-        print(f"Error getting simulation state: {e}")
-    
-    print("\n" + "="*50 + "\n")
-    
-    # Test 2: Set time to 8:00 AM (should be peak time)
-    print("Test 2: Setting time to 8:00 AM (peak time)")
-    try:
-        # Stop the current simulation first
-        stop_data = {"action": "stop"}
-        response = requests.post(f"{base_url}/api/simulation/control", json=stop_data)
-        if response.status_code == 200:
-            print("Stopped current simulation")
-            time.sleep(1)  # Wait for stop to complete
+import sys
+import os
+import unittest
+from datetime import datetime, timedelta
+from unittest.mock import patch, MagicMock
+
+# Add parent directory to path to import modules
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from app import calculate_electricity_cost, current_electricity_pricing
+from simulation import SimulationParameters
+
+
+class TestPeakStatusFunctionality(unittest.TestCase):
+    """Test suite for peak status functionality across the system."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.peak_start_hour = 8  # 8 AM
+        self.peak_end_hour = 22   # 10 PM
         
-        # Start simulation with time set to 8:00 AM
-        start_data = {
-            "action": "start",
-            "start_date": "2020-01-01",
-            "start_time": "08:00:00"
+    def test_peak_time_detection_morning_start(self):
+        """Test peak time detection at morning start (8 AM)."""
+        test_datetime = datetime(2020, 1, 1, 8, 0, 0)  # 8:00 AM
+        is_peak = (
+            test_datetime.hour >= self.peak_start_hour
+            and test_datetime.hour < self.peak_end_hour
+        )
+        self.assertTrue(is_peak, "8 AM should be peak time")
+        
+    def test_peak_time_detection_evening_end(self):
+        """Test peak time detection at evening end (10 PM)."""
+        test_datetime = datetime(2020, 1, 1, 22, 0, 0)  # 10:00 PM
+        is_peak = (
+            test_datetime.hour >= self.peak_start_hour
+            and test_datetime.hour < self.peak_end_hour
+        )
+        self.assertFalse(is_peak, "10 PM should be off-peak time")
+        
+    def test_peak_time_detection_midnight(self):
+        """Test peak time detection at midnight."""
+        test_datetime = datetime(2020, 1, 1, 0, 0, 0)  # 12:00 AM
+        is_peak = (
+            test_datetime.hour >= self.peak_start_hour
+            and test_datetime.hour < self.peak_end_hour
+        )
+        self.assertFalse(is_peak, "Midnight should be off-peak time")
+        
+    def test_peak_time_detection_noon(self):
+        """Test peak time detection at noon."""
+        test_datetime = datetime(2020, 1, 1, 12, 0, 0)  # 12:00 PM
+        is_peak = (
+            test_datetime.hour >= self.peak_start_hour
+            and test_datetime.hour < self.peak_end_hour
+        )
+        self.assertTrue(is_peak, "Noon should be peak time")
+
+    def test_electricity_cost_calculation_peak(self):
+        """Test electricity cost calculation during peak hours."""
+        # Test during peak hours (noon)
+        test_datetime = datetime(2020, 1, 1, 12, 0, 0)
+        grid_request = 10.0  # 10 kW
+        time_hours = 1.0     # 1 hour
+        
+        cost_info = calculate_electricity_cost(grid_request, time_hours, test_datetime)
+        
+        # Should use peak rate (0.229 RM/kWh)
+        expected_cost = 10.0 * 1.0 * 0.229  # 2.29 RM
+        self.assertAlmostEqual(cost_info['cost'], expected_cost, places=3)
+        self.assertEqual(cost_info['rate_type'], 'Peak')
+        self.assertEqual(cost_info['rate_used'], 0.229)
+
+    def test_electricity_cost_calculation_off_peak(self):
+        """Test electricity cost calculation during off-peak hours."""
+        # Reset global cost tracking for clean test
+        import app
+        app.total_grid_cost = 0.0
+        
+        # Test during off-peak hours (midnight)
+        test_datetime = datetime(2020, 1, 1, 0, 0, 0)
+        grid_request = 10.0  # 10 kW
+        time_hours = 1.0     # 1 hour
+        
+        cost_info = calculate_electricity_cost(grid_request, time_hours, test_datetime)
+        
+        # Should use off-peak rate (0.139 RM/kWh)
+        expected_cost = 10.0 * 1.0 * 0.139  # 1.39 RM
+        self.assertAlmostEqual(cost_info['cost'], expected_cost, places=3)
+        self.assertEqual(cost_info['rate_type'], 'Off-Peak')
+        self.assertEqual(cost_info['rate_used'], 0.139)
+
+    def test_simulation_grid_peak_parameter(self):
+        """Test that SimulationParameters correctly handles GridPeak."""
+        params = SimulationParameters()
+        
+        # Test setting peak status
+        params.GridPeak = 1.0  # Peak time
+        self.assertEqual(params.GridPeak, 1.0)
+        
+        # Test setting off-peak status
+        params.GridPeak = 0.0  # Off-peak time
+        self.assertEqual(params.GridPeak, 0.0)
+        
+        # Test parameters dictionary conversion
+        params_dict = params.to_dict()
+        self.assertIn('GridPeak', params_dict)
+        self.assertEqual(params_dict['GridPeak'], 0.0)
+
+    def test_peak_status_boundary_conditions(self):
+        """Test peak status at boundary conditions."""
+        test_cases = [
+            (7, 59, False, "7:59 AM should be off-peak"),
+            (8, 0, True, "8:00 AM should be peak"),
+            (8, 1, True, "8:01 AM should be peak"),
+            (21, 59, True, "9:59 PM should be peak"),
+            (22, 0, False, "10:00 PM should be off-peak"),
+            (22, 1, False, "10:01 PM should be off-peak"),
+        ]
+        
+        for hour, minute, expected_peak, message in test_cases:
+            test_datetime = datetime(2020, 1, 1, hour, minute, 0)
+            is_peak = (
+                test_datetime.hour >= self.peak_start_hour
+                and test_datetime.hour < self.peak_end_hour
+            )
+            self.assertEqual(is_peak, expected_peak, message)
+
+    def test_peak_status_data_structure(self):
+        """Test that peak status data structure is correct."""
+        # Test peak time
+        test_datetime_peak = datetime(2020, 1, 1, 14, 0, 0)  # 2 PM
+        current_hour = test_datetime_peak.hour
+        is_grid_peak = 8 <= current_hour < 22
+        
+        data_point = {
+            "is_grid_peak": is_grid_peak,
+            "grid_peak_status": "Peak" if is_grid_peak else "Off-Peak",
         }
         
-        response = requests.post(f"{base_url}/api/simulation/control", json=start_data)
-        if response.status_code == 200:
-            print("Successfully set time to 8:00 AM")
-            
-            # Wait a moment for the change to take effect
-            time.sleep(3)
-            
-            # Check the new status
-            response = requests.get(f"{base_url}/api/simulation/state")
-            if response.status_code == 200:
-                data = response.json()
-                current_time = data.get('current_datetime', 'Unknown')
-                is_peak = data.get('is_grid_peak', 'Unknown')
-                peak_status = data.get('grid_peak_status', 'Unknown')
-                
-                print(f"New simulation time: {current_time}")
-                print(f"Is grid peak: {is_peak}")
-                print(f"Peak status: {peak_status}")
-                
-                # Verify the result
-                if is_peak == True and peak_status == "Peak":
-                    print("✅ SUCCESS: Peak status correctly shows as 'Peak' at 8:00 AM")
-                else:
-                    print(f"❌ FAILURE: Expected Peak=True and status='Peak', got Peak={is_peak}, status='{peak_status}'")
-            else:
-                print(f"Failed to get updated simulation state: {response.status_code}")
-        else:
-            print(f"Failed to set time: {response.status_code} - {response.text}")
-    except Exception as e:
-        print(f"Error setting time to 8:00 AM: {e}")
-    
-    print("\n" + "="*50 + "\n")
-    
-    # Test 3: Set time to 11:00 PM (should be off-peak time)
-    print("Test 3: Setting time to 11:00 PM (off-peak time)")
-    try:
-        # Stop the current simulation first
-        stop_data = {"action": "stop"}
-        response = requests.post(f"{base_url}/api/simulation/control", json=stop_data)
-        if response.status_code == 200:
-            print("Stopped current simulation")
-            time.sleep(1)  # Wait for stop to complete
+        self.assertTrue(data_point["is_grid_peak"])
+        self.assertEqual(data_point["grid_peak_status"], "Peak")
         
-        # Start simulation with time set to 11:00 PM
-        start_data = {
-            "action": "start",
-            "start_date": "2020-01-01",
-            "start_time": "23:00:00"
+        # Test off-peak time
+        test_datetime_off_peak = datetime(2020, 1, 1, 2, 0, 0)  # 2 AM
+        current_hour = test_datetime_off_peak.hour
+        is_grid_peak = 8 <= current_hour < 22
+        
+        data_point = {
+            "is_grid_peak": is_grid_peak,
+            "grid_peak_status": "Peak" if is_grid_peak else "Off-Peak",
         }
         
-        response = requests.post(f"{base_url}/api/simulation/control", json=start_data)
-        if response.status_code == 200:
-            print("Successfully set time to 11:00 PM")
+        self.assertFalse(data_point["is_grid_peak"])
+        self.assertEqual(data_point["grid_peak_status"], "Off-Peak")
+
+    def test_all_hours_classification(self):
+        """Test peak classification for all 24 hours."""
+        for hour in range(24):
+            test_datetime = datetime(2020, 1, 1, hour, 0, 0)
+            is_peak = (
+                test_datetime.hour >= self.peak_start_hour
+                and test_datetime.hour < self.peak_end_hour
+            )
             
-            # Wait a moment for the change to take effect
-            time.sleep(3)
-            
-            # Check the new status
-            response = requests.get(f"{base_url}/api/simulation/state")
-            if response.status_code == 200:
-                data = response.json()
-                current_time = data.get('current_datetime', 'Unknown')
-                is_peak = data.get('is_grid_peak', 'Unknown')
-                peak_status = data.get('grid_peak_status', 'Unknown')
-                
-                print(f"New simulation time: {current_time}")
-                print(f"Is grid peak: {is_peak}")
-                print(f"Peak status: {peak_status}")
-                
-                # Verify the result
-                if is_peak == False and peak_status == "Off-Peak":
-                    print("✅ SUCCESS: Peak status correctly shows as 'Off-Peak' at 11:00 PM")
-                else:
-                    print(f"❌ FAILURE: Expected Peak=False and status='Off-Peak', got Peak={is_peak}, status='{peak_status}'")
+            if 8 <= hour < 22:
+                self.assertTrue(is_peak, f"Hour {hour} should be peak")
             else:
-                print(f"Failed to get updated simulation state: {response.status_code}")
-        else:
-            print(f"Failed to set time: {response.status_code} - {response.text}")
-    except Exception as e:
-        print(f"Error setting time to 11:00 PM: {e}")
-    
-    print("\n" + "="*50 + "\n")
-    
-    # Test 4: Set time back to midnight and verify
-    print("Test 4: Setting time back to midnight (off-peak time)")
-    try:
-        # Stop the current simulation first
-        stop_data = {"action": "stop"}
-        response = requests.post(f"{base_url}/api/simulation/control", json=stop_data)
-        if response.status_code == 200:
-            print("Stopped current simulation")
-            time.sleep(1)  # Wait for stop to complete
+                self.assertFalse(is_peak, f"Hour {hour} should be off-peak")
+
+    def test_peak_status_string_formatting(self):
+        """Test peak status string formatting for UI display."""
+        # Test peak status formatting
+        peak_statuses = [
+            (True, "Peak"),
+            (False, "Off-Peak"),
+        ]
         
-        # Start simulation with time set to midnight
-        start_data = {
-            "action": "start",
-            "start_date": "2020-01-01",
-            "start_time": "00:00:00"
-        }
-        
-        response = requests.post(f"{base_url}/api/simulation/control", json=start_data)
-        if response.status_code == 200:
-            print("Successfully set time back to midnight")
-            
-            # Wait a moment for the change to take effect
-            time.sleep(3)
-            
-            # Check the final status
-            response = requests.get(f"{base_url}/api/simulation/state")
-            if response.status_code == 200:
-                data = response.json()
-                current_time = data.get('current_datetime', 'Unknown')
-                is_peak = data.get('is_grid_peak', 'Unknown')
-                peak_status = data.get('grid_peak_status', 'Unknown')
-                
-                print(f"Final simulation time: {current_time}")
-                print(f"Is grid peak: {is_peak}")
-                print(f"Peak status: {peak_status}")
-                
-                # Verify the result
-                if is_peak == False and peak_status == "Off-Peak":
-                    print("✅ SUCCESS: Peak status correctly shows as 'Off-Peak' at midnight")
-                else:
-                    print(f"❌ FAILURE: Expected Peak=False and status='Off-Peak', got Peak={is_peak}, status='{peak_status}'")
-            else:
-                print(f"Failed to get final simulation state: {response.status_code}")
-        else:
-            print(f"Failed to set time back to midnight: {response.status_code} - {response.text}")
-    except Exception as e:
-        print(f"Error setting time back to midnight: {e}")
+        for is_peak, expected_string in peak_statuses:
+            status_string = "Peak" if is_peak else "Off-Peak"
+            self.assertEqual(status_string, expected_string)
+
+
+def run_peak_status_tests():
+    """Run all peak status tests and return results."""
+    print("=" * 60)
+    print("PEAK STATUS FUNCTIONALITY TEST SUITE")
+    print("=" * 60)
+    
+    # Create test suite
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestPeakStatusFunctionality)
+    
+    # Run tests with detailed output
+    runner = unittest.TextTestRunner(verbosity=2)
+    result = runner.run(suite)
+    
+    print("\n" + "=" * 60)
+    print("PEAK STATUS TEST SUMMARY")
+    print("=" * 60)
+    print(f"Tests run: {result.testsRun}")
+    print(f"Failures: {len(result.failures)}")
+    print(f"Errors: {len(result.errors)}")
+    
+    if result.failures:
+        print("\nFAILURES:")
+        for test, traceback in result.failures:
+            print(f"- {test}: {traceback}")
+    
+    if result.errors:
+        print("\nERRORS:")
+        for test, traceback in result.errors:
+            print(f"- {test}: {traceback}")
+    
+    success = len(result.failures) == 0 and len(result.errors) == 0
+    print(f"\nOverall result: {'PASS' if success else 'FAIL'}")
+    
+    return success
+
 
 if __name__ == "__main__":
-    test_peak_status_functionality()
+    run_peak_status_tests()

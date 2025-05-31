@@ -52,7 +52,7 @@ def test_simulation_with_different_parameters():
                 bay4_percentage=70.0,
                 PVOutput=15.0,
                 BatteryOutput=50.0,
-                GridPeak=1.0,
+                GridPeak=1.0,  # Enable peak time mode for this test
                 battery_soc=50.0,
             )
         },

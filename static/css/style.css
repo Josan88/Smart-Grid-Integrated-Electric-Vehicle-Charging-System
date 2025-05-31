@@ -535,11 +535,7 @@ body {
     color: white;
 }
 
-/* Speed selector label */
-.form-label {
-    margin-bottom: 0.25rem;
-    font-weight: 500;
-}
+/* ...existing code... */
 
 /* Energy Flow Animations */
 /* REMOVE ALL .energy-flow, .energy-flow::before, .energy-flow::after rules */

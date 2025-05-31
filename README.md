@@ -17,7 +17,7 @@ The Smart Grid-Integrated Electric Vehicle (EV) Charging System is a comprehensi
 *   **2D System Visualization:** Interactive animated display showing energy flows between components
 *   **Battery Management System:** Real-time battery level with animated fill and color-coded status
 *   **Solar PV System:** Live solar power output with generation status indicators
-*   **Grid Connection:** Real-time grid power request/supply with peak/off-peak status
+*   **Grid Connection:** Real-time grid power request/supply with peak/off-peak status indication and visual indicators
 *   **EV Charging Bays:** Individual monitoring of 4 charging bays with battery levels and charging rates
 *   **Energy Flow Animations:** 6 different animated energy flow paths between system components
 
