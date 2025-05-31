@@ -108,19 +108,19 @@ APIs: NREL PVWatts V8, RESTful APIs with JSON
 ### 🚀 **One-Command Setup (Recommended)**
 ```powershell
 # Clone and run the system
-.\setup_and_run.ps1
+.\run.ps1
 ```
 
 ### 🎛️ **Custom Configuration**
 ```powershell
 # Custom port
-.\setup_and_run.ps1 -Port 8080
+.\run.ps1 -Port 8080
 
 # Skip dependency installation
-.\setup_and_run.ps1 -SkipInstall
+.\run.ps1 -SkipInstall
 
 # View all options
-.\setup_and_run.ps1 -Help
+.\run.ps1 -Help
 ```
 
 ### 🌐 **Access Dashboard**
@@ -143,7 +143,7 @@ git clone [repository-url]
 cd website
 
 # Run automated setup
-.\setup_and_run.ps1
+.\run.ps1
 ```
 
 **What the script does:**
@@ -203,7 +203,7 @@ print("MATLAB engine imported successfully!")
 │ Model           │ pvwatts.py      │ Communication   │ Progress Bars   │
 ├─────────────────┼─────────────────┼─────────────────┼─────────────────┤
 │ Battery Model   │ Cost Tracking   │ Live Updates    │ Energy Flows    │
-│ PV Model        │ Data Processing │ Point-by-Point  │ Status Indicators│
+│ PV Model        │ Data Processing │ Point-by-Point  │ Status Indicator│
 │ Grid Model      │ API Integration │ State Sync      │ Control Panels  │
 │ EV Models (4)   │ Parameter Mgmt  │ Error Handling  │ Export Features │
 └─────────────────┴─────────────────┴─────────────────┴─────────────────┘
@@ -220,7 +220,7 @@ print("MATLAB engine imported successfully!")
 
 ```
 📁 website/
-├── 🚀 setup_and_run.ps1        # Automated PowerShell setup (VERIFIED)
+├── 🚀 run.ps1        # Automated PowerShell setup (VERIFIED)
 ├── 🐍 app.py                   # Main Flask application (1,800+ lines)
 ├── 🔧 simulation.py            # MATLAB-Python interface
 ├── ☀️ pvwatts.py              # NREL PVWatts API integration
@@ -248,7 +248,7 @@ print("MATLAB engine imported successfully!")
 ### **Key Components**
 - **`app.py`**: Central Flask application with WebSocket handling, API endpoints, and cost tracking
 - **`simulation.py`**: MATLAB engine interface with result parsing and data filtering
-- **`setup_and_run.ps1`**: Production-ready automation script with error handling
+- **`run.ps1`**: Production-ready automation script with error handling
 - **`index.html`**: Complete dashboard with 2D visualization and real-time controls
 - **`script.js`**: Frontend logic for real-time updates and user interactions
 
@@ -565,6 +565,6 @@ This project is developed for educational purposes as part of the **Engineering 
 - **Performance**: <100ms WebSocket response time
 - **Reliability**: Automatic error recovery and state management
 
-**Setup Command**: `.\setup_and_run.ps1`  
+**Setup Command**: `.\run.ps1`  
 **Access URL**: http://localhost:5000  
 **Documentation**: Complete technical and user documentation included
