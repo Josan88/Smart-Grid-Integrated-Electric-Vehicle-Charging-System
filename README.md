@@ -237,7 +237,6 @@ print("MATLAB engine imported successfully!")
 ├── 🧮 CompleteV1.slx          # MATLAB Simulink model
 ├── 📊 sim_the_model.m         # MATLAB simulation script
 ├── 📄 README.md               # This documentation
-├── 📄 SETUP_GUIDE.md          # Detailed setup instructions
 │
 ├── 📁 templates/
 │   └── 🌐 index.html          # Main dashboard interface
