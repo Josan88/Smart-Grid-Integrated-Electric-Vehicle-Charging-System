@@ -286,13 +286,25 @@
                             <div class="row mb-3">
                                 <div class="col-6">
                                     <label for="lat" class="form-label">Latitude</label>
-                                    <input type="number" class="form-control" id="lat" name="lat" step="0.000001"
+                                    <input type="number" class="form-control" id="lat" name="lat" step="0.0000000000000001"
                                         min="-90" max="90">
                                 </div>
                                 <div class="col-6">
                                     <label for="lon" class="form-label">Longitude</label>
-                                    <input type="number" class="form-control" id="lon" name="lon" step="0.000001"
+                                    <input type="number" class="form-control" id="lon" name="lon" step="0.0000000000000001"
                                         min="-180" max="180">
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <label class="form-label">Location</label>
+                                    <button type="button" class="btn btn-secondary btn-sm mb-2" id="use-current-location-btn">
+                                        <i class="bi bi-geo-alt-fill"></i> Use Current Location
+                                    </button>
+                                    <p id="current-location-display" class="form-text">Location not set. Click button to use current location.</p>
+                                    <input type="hidden" id="lat" name="lat">
+                                    <input type="hidden" id="lon" name="lon">
                                 </div>
                             </div>
 

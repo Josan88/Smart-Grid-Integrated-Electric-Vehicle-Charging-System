@@ -14,6 +14,8 @@ let currentSpeedDisplay; // Add this new element
 let simStartMonthSelect; // Updated for month selection
 let simStartDaySelect;   // Updated for day selection
 let simStartHourSelect;  // Updated for hour selection
+let useCurrentLocationBtn; // For PVWatts location
+let currentLocationDisplay; // To display fetched location
 
 // Charts - removed for simplified dashboard
 // let batteryChart;
@@ -64,6 +66,8 @@ document.addEventListener('DOMContentLoaded', () => {    // Assign DOM elements 
     simStartMonthSelect = document.getElementById('sim-start-month');
     simStartDaySelect = document.getElementById('sim-start-day');
     simStartHourSelect = document.getElementById('sim-start-hour');
+    useCurrentLocationBtn = document.getElementById('use-current-location-btn');
+    currentLocationDisplay = document.getElementById('current-location-display');
 
     paramInputs = document.querySelectorAll('.param-input');
     rangeValueDisplays = {
@@ -310,6 +314,11 @@ function setupEventListeners() {
         e.preventDefault();
         updatePVWattsSettings();
     });
+
+    // PVWatts use current location button
+    if (useCurrentLocationBtn) {
+        useCurrentLocationBtn.addEventListener('click', fetchAndSetCurrentLocation);
+    }
     
     // Clear log button
     clearLogBtn.addEventListener('click', () => {
@@ -852,6 +861,14 @@ function updatePVWattsFormValues(settings) {
             input.value = value;
         }
     }
+    // Update location display text
+    if (currentLocationDisplay) {
+        if (settings.lat && settings.lon) {
+            currentLocationDisplay.textContent = `Lat: ${parseFloat(settings.lat).toFixed(4)}, Lon: ${parseFloat(settings.lon).toFixed(4)}`;
+        } else {
+            currentLocationDisplay.textContent = 'Location not set. Click button to use current location.';
+        }
+    }
 }
 
 // Add message to the simulation log
@@ -865,6 +882,65 @@ function logMessage(message, type = 'info') {
     
     simulationLog.appendChild(logEntry);
     simulationLog.scrollTop = simulationLog.scrollHeight;
+}
+
+// Fetch and set the current location using browser geolocation
+function fetchAndSetCurrentLocation() {
+    if (!navigator.geolocation) {
+        logMessage('Geolocation is not supported by your browser.', 'warning');
+        if (currentLocationDisplay) {
+            currentLocationDisplay.textContent = 'Geolocation not supported.';
+        }
+        return;
+    }
+
+    logMessage('Fetching current location...', 'info');
+    if (currentLocationDisplay) {
+        currentLocationDisplay.textContent = 'Fetching location...';
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+
+            const latInput = document.getElementById('lat');
+            const lonInput = document.getElementById('lon');
+
+            if (latInput) latInput.value = latitude;
+            if (lonInput) lonInput.value = longitude;
+
+            if (currentLocationDisplay) {
+                currentLocationDisplay.textContent = `Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}`;
+            }
+            logMessage(`Location fetched: Lat ${latitude.toFixed(4)}, Lon ${longitude.toFixed(4)}`, 'success');
+            
+            // Optionally, you might want to trigger an update to PVWatts settings here
+            // or inform the user to click "Update PVWatts Data"
+            // For now, it just populates the hidden fields.
+        },
+        (error) => {
+            let errorMsg = 'Error fetching location: ';
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMsg += "User denied the request for Geolocation.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMsg += "Location information is unavailable.";
+                    break;
+                case error.TIMEOUT:
+                    errorMsg += "The request to get user location timed out.";
+                    break;
+                case error.UNKNOWN_ERROR:
+                    errorMsg += "An unknown error occurred.";
+                    break;
+            }
+            logMessage(errorMsg, 'error');
+            if (currentLocationDisplay) {
+                currentLocationDisplay.textContent = 'Failed to retrieve location. Please enter manually if supported or try again.';
+            }
+        }
+    );
 }
 
 // Update electricity cost display
