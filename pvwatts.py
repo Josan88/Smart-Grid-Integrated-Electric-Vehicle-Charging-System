@@ -1,13 +1,11 @@
 import requests
 import json
 import os
-import time
 from typing import Dict, Any, Optional
 
 
 # Cache settings
 CACHE_FILE = "pvwatts_response.json"
-CACHE_EXPIRY_DAYS = 30  # Cache expiry in days
 
 
 def get_pvwatts_data(
@@ -110,7 +108,7 @@ def read_from_cache(
         azimuth (float): Azimuth angle (degrees). Range: 0 to 359.9.
 
     Returns:
-        dict: The cached data as a dictionary, or None if not found or expired.
+        dict: The cached data as a dictionary, or None if not found or parameters don't match.
     """
     if not os.path.exists(CACHE_FILE):
         return None
@@ -118,11 +116,6 @@ def read_from_cache(
     try:
         with open(CACHE_FILE, "r") as f:
             cached_data = json.load(f)
-
-        # Check if the cached data is expired
-        expiry_time = cached_data.get("expiry_time")
-        if expiry_time and time.time() > expiry_time:
-            return None  # Cached data is expired
 
         # Check if the requested parameters match the cached data
         request_params = cached_data.get("request_params", {})
@@ -167,9 +160,6 @@ def write_to_cache(
     # Add metadata to the response data
     enhanced_data = response_data.copy()
     
-    # Add cache expiry time
-    enhanced_data["expiry_time"] = time.time() + (CACHE_EXPIRY_DAYS * 24 * 60 * 60)
-    
     # Add request parameters
     enhanced_data["request_params"] = {
         "system_capacity": system_capacity,
@@ -200,7 +190,6 @@ def get_cache_status() -> Dict[str, Any]:
     """
     cache_info = {
         "exists": False,
-        "expiry_days_left": 0,
         "size_bytes": 0,
         "parameters": None,
         "last_modified": None
@@ -216,11 +205,6 @@ def get_cache_status() -> Dict[str, Any]:
     try:
         with open(CACHE_FILE, "r") as f:
             cached_data = json.load(f)
-        
-        expiry_time = cached_data.get("expiry_time")
-        if expiry_time:
-            days_left = (expiry_time - time.time()) / (24 * 60 * 60)
-            cache_info["expiry_days_left"] = max(0, round(days_left, 1))
         
         cache_info["parameters"] = cached_data.get("request_params")
         
