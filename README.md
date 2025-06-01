@@ -420,7 +420,7 @@ Network: Internet connection for PVWatts API
 #### **🔧 PowerShell Script**
 ```powershell
 # Issue: Execution policy error
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
 
 # Issue: Multiple browser tabs
 # Fixed in latest version - now opens single tab
