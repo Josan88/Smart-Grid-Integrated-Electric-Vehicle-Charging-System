@@ -107,12 +107,18 @@ APIs: NREL PVWatts V8, RESTful APIs with JSON
 
 ### 🚀 **One-Command Setup (Recommended)**
 ```powershell
+# Set execution policy (if needed)
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+
 # Clone and run the system
 .\run.ps1
 ```
 
 ### 🎛️ **Custom Configuration**
 ```powershell
+# Set execution policy (if needed)
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+
 # Custom port
 .\run.ps1 -Port 8080
 
@@ -141,6 +147,9 @@ The PowerShell script handles all installation steps automatically:
 # Download or clone the project
 git clone [repository-url]
 cd website
+
+# Set execution policy to allow script execution
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
 
 # Run automated setup
 .\run.ps1
@@ -420,7 +429,11 @@ Network: Internet connection for PVWatts API
 #### **🔧 PowerShell Script**
 ```powershell
 # Issue: Execution policy error
+# Solution: Set execution policy before running script
 Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+
+# Alternative: For current user only (more restrictive)
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 # Issue: Multiple browser tabs
 # Fixed in latest version - now opens single tab
